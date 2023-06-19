@@ -1,0 +1,23 @@
+{
+  "name": "sdkv2",
+  "version": "0.1.0",
+  "license": "ISC",
+  "scripts": {
+    "build": "tsc",
+    "test": "npx ts-mocha -t 1000000 test/*.ts"
+  },
+  "devDependencies": {
+    "@certusone/wormhole-sdk": "^0.9.18",
+    "@solana/web3.js": "^1.77.3",
+    "@typechain/ethers-v6": "^0.4.0",
+    "@types/chai": "^4.3.5",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^20.3.1",
+    "chai": "^4.3.7",
+    "ethers": "^6.5.1",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "typechain": "^8.2.0",
+    "typescript": "^5.1.3"
+  }
+}

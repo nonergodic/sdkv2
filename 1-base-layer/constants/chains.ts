@@ -1,7 +1,7 @@
 import { reverseMapping } from "../utils";
 
 const ChainToChainIdMapping = {
-  //TODO I'm not convinced it's a good idea to have unset in here (off is not a TV channel either)
+  //TODO I'm not convinced it's a good idea to have Unset in here ('off' is not a TV channel either)
   Unset: 0,
   Solana: 1,
   Ethereum: 2,
@@ -34,6 +34,7 @@ const ChainToChainIdMapping = {
   Base: 30,
   Sei: 32,
   Wormchain: 3104,
+  //TODO holy cow, how ugly of a hack is that?! - a chainId that's exclusive to a testnet!
   Sepolia: 10002,
 } as const;
 
@@ -52,4 +53,3 @@ export const isChain = (chain: string): chain is Chain =>
 
 export const toChainId = (chain: Chain): ChainId =>
   ChainToChainIdMapping[chain];
-

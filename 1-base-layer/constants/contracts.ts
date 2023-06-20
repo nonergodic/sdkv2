@@ -2,6 +2,7 @@ import {Chain} from "./chains";
 import {Network} from "./networks";
 import {Module} from "./modules";
 
+//TODO: having Unset and Sepolia (for mainnet and devnet) in here isn't particularly kosher
 export const contracts: Record<Network, Record<Chain, Record<Module, string | undefined>>> = {
   Mainnet: {
     Unset: {
@@ -203,7 +204,6 @@ export const contracts: Record<Network, Record<Chain, Record<Module, string | un
       Relayer: undefined,
     },
     Sepolia: {
-      // This is Testnet only.
       CoreBridge: undefined,
       TokenBridge: undefined,
       NftBridge: undefined,
@@ -223,16 +223,16 @@ export const contracts: Record<Network, Record<Chain, Record<Module, string | un
       NftBridge: "2rHhojZ7hpu1zA91nvZmT8TqWWvMcKmmNBCr2mKTtMq4",
       Relayer: undefined,
     },
-    Terra: {
-      CoreBridge: "terra1pd65m0q9tl3v8znnz5f5ltsfegyzah7g42cx5v",
-      TokenBridge: "terra1pseddrv0yfsn76u4zxrjmtf45kdlmalswdv39a",
-      NftBridge: undefined,
-      Relayer: undefined,
-    },
     Ethereum: {
       CoreBridge: "0x706abc4E45D419950511e474C7B9Ed348A4a716c",
       TokenBridge: "0xF890982f9310df57d00f659cf4fd87e65adEd8d7",
       NftBridge: "0xD8E4C2DbDd2e2bd8F1336EA691dBFF6952B1a6eB",
+      Relayer: undefined,
+    },
+    Terra: {
+      CoreBridge: "terra1pd65m0q9tl3v8znnz5f5ltsfegyzah7g42cx5v",
+      TokenBridge: "terra1pseddrv0yfsn76u4zxrjmtf45kdlmalswdv39a",
+      NftBridge: undefined,
       Relayer: undefined,
     },
     Bsc: {
@@ -428,16 +428,16 @@ export const contracts: Record<Network, Record<Chain, Record<Module, string | un
       NftBridge: "NFTWqJR8YnRVqPDvTJrYuLrQDitTG5AScqbeghi4zSA",
       Relayer: undefined,
     },
-    Terra: {
-      CoreBridge: "terra18vd8fpwxzck93qlwghaj6arh4p7c5n896xzem5",
-      TokenBridge: "terra10pyejy66429refv3g35g2t7am0was7ya7kz2a4",
-      NftBridge: "terra1plju286nnfj3z54wgcggd4enwaa9fgf5kgrgzl",
-      Relayer: undefined,
-    },
     Ethereum: {
       CoreBridge: "0xC89Ce4735882C9F0f0FE26686c53074E09B0D550",
       TokenBridge: "0x0290FB167208Af455bB137780163b7B7a9a10C16",
       NftBridge: "0x26b4afb60d6c903165150c6f0aa14f8016be4aec",
+      Relayer: undefined,
+    },
+    Terra: {
+      CoreBridge: "terra18vd8fpwxzck93qlwghaj6arh4p7c5n896xzem5",
+      TokenBridge: "terra10pyejy66429refv3g35g2t7am0was7ya7kz2a4",
+      NftBridge: "terra1plju286nnfj3z54wgcggd4enwaa9fgf5kgrgzl",
       Relayer: undefined,
     },
     Bsc: {

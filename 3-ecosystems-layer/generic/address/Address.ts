@@ -1,19 +1,19 @@
 export class Address {
-  protected address: string;
+  protected address: Uint8Array;
 
-  constructor(address: string | Uint8Array | Buffer) {
-    this.address = address.toString();
+  constructor(address: Uint8Array | Buffer) {
+    this.address = new Uint8Array(address);
   }
 
   public toBuffer(): Buffer {
-    return Buffer.from(this.address, "hex");
+    return Buffer.from(this.address);
   }
 
   public toString(): string {
-    return this.address;
+    return this.address.toString();
   }
 
   public toUint8Array(): Uint8Array {
-    return new Uint8Array(this.toBuffer());
+    return this.address;
   }
 }

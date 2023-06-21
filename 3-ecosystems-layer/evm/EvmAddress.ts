@@ -1,18 +1,31 @@
-import { CHAIN_ID_ETH } from "@certusone/wormhole-sdk/lib/cjs/utils/consts";
+import { ChainName } from "@certusone/wormhole-sdk/lib/esm/utils/consts";
 import { NativeAddress } from "../generic/address/NativeAddress";
 import { strip0x } from "../generic/address/utils";
 
 export class EvmAddress extends NativeAddress {
-  constructor(address: string | Uint8Array | Buffer) {
-    super(address, CHAIN_ID_ETH);
-    if (address instanceof Uint8Array) {
-      address = Buffer.from(address).toString("hex");
+  constructor(address: string | Uint8Array | Buffer, chain: ChainName) {
+    if (typeof address === "string") {
+      address = strip0x(address).padStart(40, "0");
+      if (!EvmAddress.isValidAddress(address)) {
+        throw new Error(
+          `Invalid EVM address, expected 20-byte hex string but got ${address}`
+        );
+      }
+
+      address = Buffer.from(address, "hex");
     }
 
-    this.address = strip0x(address).padStart(40, "0"); // 20 byte hex string
+    super(address, chain);
   }
 
-  public static fromUniversalAddress(address: string): EvmAddress {
-    return new EvmAddress(address);
+  public static isValidAddress(address: string): boolean {
+    return /^(?:0x)?[a-fA-F0-9]{40}$/.test(address); // 20 byte hex string
+  }
+
+  public static fromUniversalAddress(
+    address: Uint8Array,
+    chain: ChainName
+  ): EvmAddress {
+    return new EvmAddress(address, chain);
   }
 }

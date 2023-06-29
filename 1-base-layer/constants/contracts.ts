@@ -3,7 +3,7 @@ import {Network} from "./networks";
 import {Module} from "./modules";
 
 //TODO: having Unset and Sepolia (for mainnet and devnet) in here isn't particularly kosher
-export const contracts: Record<Network, Record<Chain, Record<Module, string | undefined>>> = {
+export const contracts = {
   Mainnet: {
     Unset: {
       CoreBridge: undefined,
@@ -619,4 +619,4 @@ export const contracts: Record<Network, Record<Chain, Record<Module, string | un
       Relayer: undefined,
     },
   },
-} as const;
+} as const satisfies Record<Network, Record<Chain, Record<Module, string | undefined>>>;

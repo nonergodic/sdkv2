@@ -1,9 +1,9 @@
 //TODO not convinced that "Grouping" is a good name (sounds too generic) - considered Ecosystems,
 //     but that seems to refer more to everything that exists within a single chain, rather
 //     than a collection of similar chains
+//     also considered environments but that's too close to env/environment variables etc.
 
 import { Chain, chains } from "./chains";
-import { Network } from "./networks";
 
 //TODO not convinced that these are the groupings we want (is terra a valid grouping? are we missing
 //     other sensible groupings?)
@@ -26,7 +26,7 @@ export const inGrouping = (chain: Chain, grouping: Grouping): boolean =>
   (groupings[grouping]).includes(chain);
 
 
-//TODO grouping specific functions, e.g.:
+//TODO environment specific functions, e.g.:
 //  evm chain id -> (Chain, Network)
 //  Solana genesis block -> (Chain, Network)
 //  similar mappings for other groupings

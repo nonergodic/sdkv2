@@ -1,9 +1,10 @@
-import { Grouping } from "../1-base-layer/constants/grouping";
+import { Ecosystem } from "../1-base-layer/constants/ecosystems";
 import { Address } from "./address";
-import { hexStringToUint8Array, uint8ArrayToHexString } from "../1-base-layer/utils";
-
-//TODO this should be moved to constants layer
-type Ecosystem = Extract<Grouping, "Evm" | "Solana" | "Cosmwasm">;
+import {
+  hexByteStringToUint8Array,
+  uint8ArrayToHexByteString,
+  isHexByteString
+} from "../1-base-layer/utils";
 
 declare global {
   interface EcosystemToNativeAddressMapping {}
@@ -24,7 +25,7 @@ export class WormholeAddress implements Address {
           `Invalid Wormhole address, expected ${WormholeAddress.byteSize}-byte hex string but got ${address}`
         );
 
-      this.address = hexStringToUint8Array(address);
+      this.address = hexByteStringToUint8Array(address);
     }
     else {
       this.address = address;
@@ -40,16 +41,24 @@ export class WormholeAddress implements Address {
     return (new nativeCtr(this)) as EcosystemToNativeAddressMapping[T];
   }
 
+  get(): Uint8Array {
+    return this.address;
+  }
+
   toString(): string {
-    return uint8ArrayToHexString(this.address);
+    return uint8ArrayToHexByteString(this.address);
   }
 
   toUint8Array(): Uint8Array {
     return this.address;
   }
+
+  toWormholeAddress(): WormholeAddress {
+    return this;
+  }
   
   static isValidAddress(address: string): boolean {
-    return /^(?:0x)?[a-fA-F0-9]{2*WormholeAddress.byteSize}$/.test(address); // 32 byte hex string
+    return isHexByteString(address, WormholeAddress.byteSize);
   }
 
   //TODO we probably also want to include chain -> AddressType in the mapping

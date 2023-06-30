@@ -1,5 +1,6 @@
-import { Address } from "../../2-definition-layer/address";
-import { WormholeAddress } from "../../2-definition-layer/wormholeAddress";
+import { isHexByteString, hexByteStringToUint8Array } from "../../../1-base-layer/utils";
+import { Address } from "../../../2-definition-layer/address";
+import { WormholeAddress } from "../../../2-definition-layer/wormholeAddress";
 
 import { PublicKey, PublicKeyInitData } from "@solana/web3.js";
 
@@ -15,19 +16,15 @@ export class SolanaAddress implements Address {
   private readonly address: PublicKey;
 
   constructor(address: PublicKeyInitData | WormholeAddress) {
-    if (address instanceof WormholeAddress) {
+    if (address instanceof WormholeAddress)
       this.address = new PublicKey(address.toUint8Array());
-    }
-    if (typeof address === "string") {
-      //TODO check if PublicKey always expects base58 encoding or whether it also accepts hex strings
-      //     if hex is fine too, just delete this branch
-      this.address = new PublicKey(address);
-    }
+    if (typeof address === "string" && isHexByteString(address))
+      this.address = new PublicKey(hexByteStringToUint8Array(address));
     else
       this.address = new PublicKey(address);
   }
 
-  toNative(): PublicKey {
+  get(): PublicKey {
     return this.address;
   }
 
@@ -37,6 +34,10 @@ export class SolanaAddress implements Address {
 
   toUint8Array(): Uint8Array {
     return this.address.toBytes();
+  }
+
+  toWormholeAddress(): WormholeAddress {
+    return new WormholeAddress(this.address.toBytes());
   }
 
   isValidAddress(address: string): boolean {

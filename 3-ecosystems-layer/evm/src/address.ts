@@ -1,5 +1,5 @@
-import { Address } from "../../2-definition-layer/address";
-import { WormholeAddress } from "../../2-definition-layer/wormholeAddress";
+import { Address } from "../../../2-definition-layer/address";
+import { WormholeAddress } from "../../../2-definition-layer/wormholeAddress";
 
 import { ethers } from "ethers";
 
@@ -12,6 +12,7 @@ declare global {
 export class EvmAddress implements Address {
   static readonly byteSize = 20;
   
+  //stored as checksum address
   private readonly address: string;
 
   constructor(address: string | Uint8Array | WormholeAddress) {
@@ -34,7 +35,7 @@ export class EvmAddress implements Address {
       throw new Error(`Invalid EVM address ${address}`);
   }
 
-  toNative(): string {
+  get(): string {
     return this.address;
   }
 
@@ -44,6 +45,10 @@ export class EvmAddress implements Address {
 
   toUint8Array(): Uint8Array {
     return ethers.utils.arrayify(this.address);
+  }
+
+  toWormholeAddress(): WormholeAddress {
+    return new WormholeAddress(ethers.utils.hexZeroPad(this.address, WormholeAddress.byteSize));
   }
 
   static isValidAddress(address: string): boolean {

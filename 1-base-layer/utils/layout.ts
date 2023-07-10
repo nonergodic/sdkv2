@@ -114,6 +114,32 @@ export type LayoutToType<T> =
   )
   : never;
 
+export function serializeLayout<T extends readonly LayoutItem[]>(
+  layout: T,
+  data: LayoutToType<T>,
+): Uint8Array {
+  const ret = new Uint8Array(calcLayoutSize(layout, data));
+  let offset = 0;
+  for (let i = 0; i < layout.length; ++i)
+    offset = serializeLayoutItem(layout[i], data[i], ret, offset);
+  
+  return ret;
+}
+
+export function deserializeLayout<T extends readonly LayoutItem[]>(
+  layout: T,
+  encoded: Uint8Array,
+): LayoutToType<T> {
+  let [decoded, offset] = deserializeArray(layout, encoded, 0);
+
+  if (offset !== encoded.length)
+    throw new Error(`encoded data is longer than expected: ${encoded.length} > ${offset}`);
+  
+  return decoded as LayoutToType<T>;
+}
+
+// -- IMPL --
+
 //Wormhole uses big endian by default for all uints
 const serializeUint = (
   encoded: Uint8Array,
@@ -148,6 +174,30 @@ const calcLayoutSize = (layout: readonly LayoutItem[], data: any): number =>
     0
   );
 
+const checkUint8ArraySize = (custom: Uint8Array, size: number): void => {
+  if (custom.length !== size)
+    throw new Error(
+      `binary size mismatch: layout size: ${custom.length}, data size: ${size}`
+    );
+}
+
+const checkUintEquals = (custom: number | bigint, data: number | bigint): void => {
+  if (custom != data)
+    throw new Error(
+      `value mismatch: (constant) layout value: ${custom}, data value: ${data}`
+    );
+}
+
+const checkUint8ArrayDeeplyEqual = (custom: Uint8Array, data: Uint8Array): void => {
+  checkUint8ArraySize(custom, data.length);
+
+  for (let i = 0; i < custom.length; ++i)
+    if (custom[i] !== data[i])
+      throw new Error(
+        `binary data mismatch: layout value: ${custom}, data value: ${data}`
+      );
+}
+
 const serializeLayoutItem = (
   item: LayoutItem,
   data: any,
@@ -164,53 +214,20 @@ const serializeLayoutItem = (
       
       break;
     }
-    case "uint": {
-      const value = (() => {
-        if (item.custom !== undefined) {
-          if (typeof item.custom == "number" || typeof item.custom === "bigint") {
-            //fixed value
-            if (item.custom != data)
-              throw new Error(
-                `value mismatch: (constant) layout value: ${item.custom}, data value: ${data}`
-              );
-             
-            return item.custom;
-          }
-          //custom conversion
-          return item.custom.from(data);
-        }
-        return data as number | bigint;
-      })();
-
-      offset = serializeUint(encoded, offset, value, item.size);
-      break;
-    }
     case "bytes": {
       const value = (() => {
         if (item.custom !== undefined) {
           if (item.custom instanceof Uint8Array) {
             //fixed value
-            if (item.custom.length !== data.length)
-              throw new Error(
-                `binary size mismatch: layout size: ${item.custom.length}, data size: ${data.length}`
-              );
-            
-            for (let i = 0; i < item.custom.length; ++i)
-              if (item.custom[i] !== data[i])
-                throw new Error(
-                  `binary data mismatch: layout value: ${item.custom}, data value: ${data}`
-                );
-            
+            checkUint8ArrayDeeplyEqual(item.custom, data)
             return item.custom;
           }
           //custom conversion
           const converted = item.custom.from(data);
-          if (converted.length !== item.size)
-            throw new Error(
-              `custom conversion size mismatch: ` +
-              `layout size: ${item.size}, data size: ${converted.length}`
-            );
-          return item.custom.from(data);
+          if (item.size !== undefined)
+            checkUint8ArraySize(converted, item.size);
+          
+          return converted;
         }
         //primitive type
         return data as Uint8Array;
@@ -220,21 +237,29 @@ const serializeLayoutItem = (
       offset += data.length;
       break;
     }
+    case "uint": {
+      const value = (() => {
+        if (item.custom !== undefined) {
+          if (typeof item.custom == "number" || typeof item.custom === "bigint") {
+            //fixed value
+            checkUintEquals(item.custom, data);
+            return item.custom;
+          }
+          //custom conversion
+          return item.custom.from(data);
+        }
+        //primitive type
+        return data as number | bigint;
+      })();
+
+      offset = serializeUint(encoded, offset, value, item.size);
+      break;
+    }
   }
   return offset;
 };
 
-export function serializeLayout<T extends readonly LayoutItem[]>(
-  layout: T,
-  data: LayoutToType<T>,
-): Uint8Array {
-  const ret = new Uint8Array(calcLayoutSize(layout, data));
-  let offset = 0;
-  for (let i = 0; i < layout.length; ++i)
-    offset = serializeLayoutItem(layout[i], data[i], ret, offset);
-  
-  return ret;
-}
+// deserialize
 
 const updateOffset = (
   encoded: Uint8Array,
@@ -299,22 +324,33 @@ const deserializeLayoutItem = (
       else
         newOffset = encoded.length
       
-      return [encoded.slice(offset, newOffset), newOffset];
+      const value = encoded.slice(offset, newOffset);
+      if (item.custom !== undefined) {
+        if (item.custom instanceof Uint8Array) {
+          //fixed value
+          checkUint8ArrayDeeplyEqual(item.custom, value);
+          return [value, newOffset];
+        }
+        //custom conversion
+        return [item.custom.from(value), newOffset];
+      }
+      //primitive type
+      return [value, newOffset];
     }
     case "uint": {
-      return deserializeUint(encoded, offset, item.size);
+      const [value, newOffset] = deserializeUint(encoded, offset, item.size);
+      if (item.custom !== undefined) {
+        if (typeof item.custom === "number" || typeof item.custom === "bigint") {
+          //fixed value
+          checkUintEquals(item.custom, value);
+          
+          return [value, newOffset];
+        }
+        //custom conversion
+        return [item.custom.from(value), newOffset];
+      }
+      //primitive type
+      return [value, newOffset];
     }
   }
-}
-
-export function deserializeLayout<T extends readonly LayoutItem[]>(
-  layout: T,
-  encoded: Uint8Array,
-): LayoutToType<T> {
-  let [decoded, offset] = deserializeArray(layout, encoded, 0);
-
-  if (offset !== encoded.length)
-    throw new Error(`encoded data is longer than expected: ${encoded.length} > ${offset}`);
-  
-  return decoded as LayoutToType<T>;
 }

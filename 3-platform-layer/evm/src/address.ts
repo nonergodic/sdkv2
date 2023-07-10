@@ -1,13 +1,13 @@
 import { Address } from "../../../2-definition-layer/address";
-import { WormholeAddress } from "../../../2-definition-layer/wormholeAddress";
+import { UniversalAddress } from "../../../2-definition-layer/universalAddress";
 
 import { ethers } from "ethers";
 
-declare global {
-  interface EcosystemToNativeAddressMapping {
+declare global { namespace Wormhole {
+  interface PlatformToNativeAddressMapping {
     Evm: EvmAddress;
   }
-}
+}}
 
 export class EvmAddress implements Address {
   static readonly byteSize = 20;
@@ -15,20 +15,24 @@ export class EvmAddress implements Address {
   //stored as checksum address
   private readonly address: string;
 
-  constructor(address: string | Uint8Array | WormholeAddress) {
+  constructor(address: string | Uint8Array | UniversalAddress) {
     if (typeof address === "string") {
       if (!EvmAddress.isValidAddress(address))
-        throw new Error(`Invalid EVM address, expected ${EvmAddress.byteSize}-byte hex string but got ${address}`);
+        throw new Error(
+          `Invalid EVM address, expected ${EvmAddress.byteSize}-byte hex string but got ${address}`
+        );
       
       this.address = ethers.utils.getAddress(address);
     }
     else if (address instanceof Uint8Array) {
       if (address.length !== EvmAddress.byteSize)
-        throw new Error(`Invalid EVM address, expected ${EvmAddress.byteSize} bytes but got ${address.length}`);
+        throw new Error(
+          `Invalid EVM address, expected ${EvmAddress.byteSize} bytes but got ${address.length}`
+        );
       
       this.address = ethers.utils.getAddress(ethers.utils.hexlify(address));
     }
-    else if (address instanceof WormholeAddress) {
+    else if (address instanceof UniversalAddress) {
       this.address = ethers.utils.getAddress(address.toString());
     }
     else
@@ -47,8 +51,8 @@ export class EvmAddress implements Address {
     return ethers.utils.arrayify(this.address);
   }
 
-  toWormholeAddress(): WormholeAddress {
-    return new WormholeAddress(ethers.utils.hexZeroPad(this.address, WormholeAddress.byteSize));
+  toUniversalAddress(): UniversalAddress {
+    return new UniversalAddress(ethers.utils.hexZeroPad(this.address, UniversalAddress.byteSize));
   }
 
   static isValidAddress(address: string): boolean {
@@ -56,4 +60,4 @@ export class EvmAddress implements Address {
   }
 }
 
-WormholeAddress.registerNative("Evm", EvmAddress);
+UniversalAddress.registerNative("Evm", EvmAddress);

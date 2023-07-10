@@ -1,22 +1,22 @@
-import { isHexByteString, hexByteStringToUint8Array } from "../../../1-base-layer/utils";
+import { isHexByteString, hexByteStringToUint8Array } from "../../../1-base-layer/utils/hexstring";
 import { Address } from "../../../2-definition-layer/address";
-import { WormholeAddress } from "../../../2-definition-layer/wormholeAddress";
+import { UniversalAddress } from "../../../2-definition-layer/universalAddress";
 
 import { PublicKey, PublicKeyInitData } from "@solana/web3.js";
 
-declare global {
-  interface EcosystemToNativeAddressMapping {
+declare global { namespace Wormhole {
+  interface PlatformToNativeAddressMapping {
     Solana: SolanaAddress;
   }
-}
+}}
 
 export class SolanaAddress implements Address {
   static readonly byteSize = 32;
 
   private readonly address: PublicKey;
 
-  constructor(address: PublicKeyInitData | WormholeAddress) {
-    if (address instanceof WormholeAddress)
+  constructor(address: PublicKeyInitData | UniversalAddress) {
+    if (address instanceof UniversalAddress)
       this.address = new PublicKey(address.toUint8Array());
     if (typeof address === "string" && isHexByteString(address))
       this.address = new PublicKey(hexByteStringToUint8Array(address));
@@ -36,8 +36,8 @@ export class SolanaAddress implements Address {
     return this.address.toBytes();
   }
 
-  toWormholeAddress(): WormholeAddress {
-    return new WormholeAddress(this.address.toBytes());
+  toUniversalAddress(): UniversalAddress {
+    return new UniversalAddress(this.address.toBytes());
   }
 
   isValidAddress(address: string): boolean {
@@ -51,4 +51,4 @@ export class SolanaAddress implements Address {
   }
 }
 
-WormholeAddress.registerNative("Solana", SolanaAddress);
+UniversalAddress.registerNative("Solana", SolanaAddress);

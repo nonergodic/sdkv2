@@ -1,6 +1,6 @@
-import { reverseMapping } from "../utils";
+import { reverseMapping } from "../utils/mapping";
 
-const ChainToChainIdMapping = {
+export const ChainToChainIdMapping = {
   //TODO I'm not convinced it's a good idea to have Unset in here ('off' is not a TV channel either)
   Unset: 0,
   Solana: 1,
@@ -38,7 +38,7 @@ const ChainToChainIdMapping = {
   Sepolia: 10002,
 } as const;
 
-const ChainIdToChainMapping = reverseMapping(ChainToChainIdMapping);
+export const ChainIdToChainMapping = reverseMapping(ChainToChainIdMapping);
 
 export type ChainToChainId = typeof ChainToChainIdMapping;
 export type ChainIdToChain = typeof ChainIdToChainMapping;
@@ -53,3 +53,6 @@ export const isChain = (chain: string): chain is Chain =>
 
 export const toChainId = (chain: Chain): ChainId =>
   ChainToChainIdMapping[chain];
+
+export const isChainId = (chainId: number): chainId is ChainId =>
+  chainId in ChainIdToChainMapping;

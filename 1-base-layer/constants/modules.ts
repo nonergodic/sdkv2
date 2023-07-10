@@ -5,7 +5,7 @@
  *     - "TokenBridge" - https://github.com/wormhole-foundation/wormhole/blob/9e61d151c61bedb18ab1d4ca6ffb1c6c91b108f0/ethereum/contracts/bridge/BridgeGovernance.sol#L24
  *     - "NFTBridge" - https://github.com/wormhole-foundation/wormhole/blob/9e61d151c61bedb18ab1d4ca6ffb1c6c91b108f0/ethereum/contracts/nft/NFTBridgeGovernance.sol#L23
  *     - "WormholeRelayer" - https://github.com/wormhole-foundation/wormhole/blob/9e61d151c61bedb18ab1d4ca6ffb1c6c91b108f0/ethereum/contracts/relayer/wormholeRelayer/WormholeRelayerGovernance.sol#L43
- *   while the core contract is actually called "Wormhole" in most ecosystems
+ *   while the core contract is actually called "Wormhole" in most platforms
  *     - though in solana it's called bridge - https://github.com/wormhole-foundation/wormhole/tree/main/solana/bridge
  *     - and in algorand it seems to be called wormhole_core - https://github.com/wormhole-foundation/wormhole/blob/main/algorand/wormhole_core.py
  *     - and in EVM it resides directly in the contracts directory
@@ -17,6 +17,8 @@
  *     (i.e. are in the modules directory: https://github.com/wormhole-foundation/wormhole/tree/main/solana/modules).
  *   While in the JS SDK, the core bridge functionality is in the "bridge" directory
  *     (notice the clash with EVM where bridge refers to the token bridge...).
+ * 
+ * Additionally, "modules" seems like a bad choice in a TS/JS context...
  * 
  * With all of this in mind: What should we name modules here?
  * My preferred choice would be ["CoreBridge", "TokenBridge", "NftBridge", "Relayer"]

@@ -1,0 +1,9 @@
+{
+  "name": "wormhole-solana",
+  "version": "0.1.0",
+  "dependencies": {
+    "wormhole-base": "^0.1.0",
+    "wormhole-definitions": "^0.1.0",
+    "@solana/web3.js": "^1.77.3"
+  }
+}

@@ -1,4 +1,4 @@
-import { isHexByteString, hexByteStringToUint8Array } from "../../../1-base-layer/utils/hexstring";
+import { isHexByteString, hexByteStringToUint8Array } from "../../wormhole-base/utils/hexstring";
 import { Address } from "../../../2-definition-layer/address";
 import { UniversalAddress } from "../../../2-definition-layer/universalAddress";
 

@@ -1,10 +1,11 @@
-import { Platform } from "../1-base-layer/constants/platforms";
-import { Address } from "./address";
 import {
+  Platform,
   hexByteStringToUint8Array,
   uint8ArrayToHexByteString,
   isHexByteString
-} from "../1-base-layer/utils/hexstring";
+} from "wormhole-base";
+
+import { Address } from "./address";
 
 declare global { namespace Wormhole {
   interface PlatformToNativeAddressMapping {}

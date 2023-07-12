@@ -1,6 +1,14 @@
-import { ChainId, isChainId } from "../1-base-layer/constants/chains";
-import { hexByteStringToUint8Array } from "../1-base-layer/utils/hexstring";
-import { LayoutItem, LayoutToType, CustomConversion } from "../1-base-layer/utils/layout";
+import {
+  ChainId,
+  isChainId,
+  hexByteStringToUint8Array,
+  LayoutItem,
+  LayoutToType,
+  CustomConversion,
+  serializeLayout,
+  deserializeLayout
+} from "wormhole-base";
+
 import { UniversalAddress } from "./universalAddress";
 
 declare global { namespace Wormhole {
@@ -149,6 +157,8 @@ export const layoutGenerator = <const PayloadLayout>(payloadLayout: PayloadLayou
   }
 ] as const;
 
+const rawVaaLayout = layoutGenerator({"binary": "bytes"});
+
 export interface PayloadSerDe {
   serialize(payload: any): Uint8Array;
   deserialize(bytes: Uint8Array): any;
@@ -166,53 +176,37 @@ export function registerPayloadType(
   payloadFactory.set(payloadLiteral, payloadSerDe);
 }
 
-export function serialize<T extends PayloadLiterals>(vaa: VAA<T>): Uint8Array {
+export function serialize<PayloadLiteral extends PayloadLiterals>(
+  vaa: VAA<PayloadLiteral>
+): Uint8Array {
   const serde = payloadFactory.get(vaa.payloadLiteral);
   if (!serde)
     throw new Error(`No serializer/deserializer registered for payload type ${vaa.payloadLiteral}`);
 
-  //TODO impl!
-  
-  serde.serialize(vaa.payload);
-
-  return new Uint8Array(0);
+  return serializeLayout(rawVaaLayout, {...vaa, payload: serde.serialize(vaa.payload)});
 }
 
 export function deserialize<PayloadLiteral extends PayloadLiterals>(
   payloadLiteral: PayloadLiteral,
   data: Uint8Array | string,
 ): VAA<PayloadLiteral> {
-  if (typeof data === "string")
-    data = hexByteStringToUint8Array(data);
-
   const serde = payloadFactory.get(payloadLiteral);
   if (!serde)
     throw new Error(`No serializer/deserializer registered for payload type ${payloadLiteral}`);
-  //TODO impl!
-  const payload = serde.deserialize(data);
+  
+  if (typeof data === "string")
+    data = hexByteStringToUint8Array(data);
+  
+  const rawVaa = deserializeLayout(rawVaaLayout, data);
 
-  return {} as VAA<PayloadLiteral>;
+  return {
+    ...rawVaa,
+    payloadLiteral,
+    payload: serde.deserialize(rawVaa.payload)
+  } as VAA<PayloadLiteral>;
 }
 
-const foo: VAA<"Uint8Array"> = {
-  payloadLiteral: "Uint8Array",
-  version: 1,
-  guardianSet: 1,
-  signatures: [
-    {
-      guardianSetIndex: 1,
-      signature: new Uint8Array(65),
-    },
-    {
-      guardianSetIndex: 2,
-      signature: new Uint8Array(65),
-    }
-  ],
-  timestamp: 1,
-  nonce: 1,
-  emitterChain: 1,
-  emitterAddress: new UniversalAddress(new Uint8Array(32)),
-  sequence: 1n,
-  consistencyLevel: 1,
-  payload: new Uint8Array(32),
-};
+payloadFactory.set("Uint8Array", {
+  serialize: (payload: Uint8Array) => payload,
+  deserialize: (payload: Uint8Array) => payload
+});

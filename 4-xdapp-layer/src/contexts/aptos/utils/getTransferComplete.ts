@@ -1,19 +1,19 @@
 import { AptosClient } from 'aptos';
-import { ensureHexPrefix } from "utils/array";
+import { ensureHexPrefix } from 'utils/array';
 import { NftBridgeState } from '../types';
 import { getSignedVAAHash } from 'vaa';
 
 export async function getIsTransferCompletedAptos(
   client: AptosClient,
   nftBridgeAddress: string,
-  transferVaa: Uint8Array
+  transferVaa: Uint8Array,
 ): Promise<boolean> {
   // get handle
   nftBridgeAddress = ensureHexPrefix(nftBridgeAddress);
   const state = (
     await client.getAccountResource(
       nftBridgeAddress,
-      `${nftBridgeAddress}::state::State`
+      `${nftBridgeAddress}::state::State`,
     )
   ).data as NftBridgeState;
   const handle = state.consumed_vaas.elems.handle;
@@ -23,8 +23,8 @@ export async function getIsTransferCompletedAptos(
   try {
     // when accessing Set<T>, key is type T and value is 0
     await client.getTableItem(handle, {
-      key_type: "vector<u8>",
-      value_type: "u8",
+      key_type: 'vector<u8>',
+      value_type: 'u8',
       key: transferVaaHash,
     });
     return true;

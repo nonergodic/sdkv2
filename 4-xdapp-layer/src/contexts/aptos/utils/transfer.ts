@@ -1,7 +1,7 @@
 import { Types } from 'aptos';
 import { ChainId } from 'types';
 import { createNonce } from 'utils/createNonce';
-import { isValidAptosType } from "./utils";
+import { isValidAptosType } from './utils';
 
 export const transferTokens = (
   tokenBridgeAddress: string,
@@ -10,11 +10,11 @@ export const transferTokens = (
   recipientChainId: ChainId,
   recipient: Uint8Array,
   relayerFee: string,
-  nonce: number
+  nonce: number,
 ): Types.EntryFunctionPayload => {
-  if (!tokenBridgeAddress) throw new Error("Need token bridge address.");
+  if (!tokenBridgeAddress) throw new Error('Need token bridge address.');
   if (!isValidAptosType(fullyQualifiedType)) {
-    throw new Error("Invalid qualified type");
+    throw new Error('Invalid qualified type');
   }
 
   return {
@@ -32,9 +32,9 @@ export const transferTokensWithPayload = (
   recipient: Uint8Array,
   relayerFee: string,
   nonce: number,
-  payload: string
+  payload: string,
 ): Types.EntryFunctionPayload => {
-  throw new Error("Transfer with payload are not yet supported in the sdk");
+  throw new Error('Transfer with payload are not yet supported in the sdk');
 };
 
 /**
@@ -54,8 +54,8 @@ export function transferFromAptos(
   amount: string,
   recipientChain: ChainId,
   recipient: Uint8Array,
-  relayerFee: string = "0",
-  payload: string = ""
+  relayerFee: string = '0',
+  payload: string = '',
 ): Types.EntryFunctionPayload {
   if (payload) {
     // Currently unsupported
@@ -67,7 +67,7 @@ export function transferFromAptos(
       recipient,
       relayerFee,
       createNonce().readUInt32LE(0),
-      payload
+      payload,
     );
   }
 
@@ -78,6 +78,6 @@ export function transferFromAptos(
     recipientChain,
     recipient,
     relayerFee,
-    createNonce().readUInt32LE(0)
+    createNonce().readUInt32LE(0),
   );
 }

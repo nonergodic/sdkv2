@@ -9,21 +9,21 @@ import {
   SuiObjectResponse,
   SuiTransactionBlockResponse,
   TransactionBlock,
-} from "@mysten/sui.js";
-import { DynamicFieldPage } from "@mysten/sui.js/dist/types/dynamic_fields";
-import { ensureHexPrefix } from "utils/array";
-import { SuiRpcValidationError } from "./error";
-import { SuiError } from "./types";
+} from '@mysten/sui.js';
+import { DynamicFieldPage } from '@mysten/sui.js/dist/types/dynamic_fields';
+import { ensureHexPrefix } from 'utils/array';
+import { SuiRpcValidationError } from './error';
+import { SuiError } from './types';
 
 const MAX_PURE_ARGUMENT_SIZE = 16 * 1024;
-const UPGRADE_CAP_TYPE = "0x2::package::UpgradeCap";
+const UPGRADE_CAP_TYPE = '0x2::package::UpgradeCap';
 
 export const uint8ArrayToBCS = (arr: Uint8Array) =>
-  builder.ser("vector<u8>", arr, { maxSize: MAX_PURE_ARGUMENT_SIZE }).toBytes();
+  builder.ser('vector<u8>', arr, { maxSize: MAX_PURE_ARGUMENT_SIZE }).toBytes();
 
 export const executeTransactionBlock = async (
   signer: RawSigner,
-  transactionBlock: TransactionBlock
+  transactionBlock: TransactionBlock,
 ): Promise<SuiTransactionBlockResponse> => {
   // Let caller handle parsing and logging info
   transactionBlock.setGasBudget(100000000);
@@ -43,11 +43,11 @@ export const executeTransactionBlock = async (
 // this is the same type that the guardian will look for
 export const getEmitterAddressAndSequenceFromResponseSui = (
   originalCoreBridgePackageId: string,
-  response: SuiTransactionBlockResponse
+  response: SuiTransactionBlockResponse,
 ): { emitterAddress: string; sequence: string } => {
   const wormholeMessageEventType = `${originalCoreBridgePackageId}::publish_message::WormholeMessage`;
   const event = response.events?.find((e) =>
-    isSameType(e.type, wormholeMessageEventType)
+    isSameType(e.type, wormholeMessageEventType),
   );
   if (event === undefined) {
     throw new Error(`${wormholeMessageEventType} event type not found`);
@@ -63,7 +63,7 @@ export const getEmitterAddressAndSequenceFromResponseSui = (
 
 export const getFieldsFromObjectResponse = (object: SuiObjectResponse) => {
   const content = object.data?.content;
-  return content && content.dataType === "moveObject" ? content.fields : null;
+  return content && content.dataType === 'moveObject' ? content.fields : null;
 };
 
 export const getInnerType = (type: string): string | null => {
@@ -78,7 +78,7 @@ export const getInnerType = (type: string): string | null => {
 
 export const getObjectFields = async (
   provider: JsonRpcProvider,
-  objectId: string
+  objectId: string,
 ): Promise<Record<string, any> | null> => {
   if (!isValidSuiAddress(objectId)) {
     throw new Error(`Invalid object ID: ${objectId}`);
@@ -95,25 +95,25 @@ export const getObjectFields = async (
 
 export const getOriginalPackageId = async (
   provider: JsonRpcProvider,
-  stateObjectId: string
+  stateObjectId: string,
 ) => {
   return getObjectType(
     await provider.getObject({
       id: stateObjectId,
       options: { showContent: true },
-    })
-  )?.split("::")[0];
+    }),
+  )?.split('::')[0];
 };
 
 export const getOwnedObjectId = async (
   provider: JsonRpcProvider,
   owner: string,
-  type: string
+  type: string,
 ): Promise<string | null> => {
   // Upgrade caps are a special case
   if (isSameType(type, UPGRADE_CAP_TYPE)) {
     throw new Error(
-      "`getOwnedObjectId` should not be used to get the object ID of an `UpgradeCap`. Use `getUpgradeCapObjectId` instead."
+      '`getOwnedObjectId` should not be used to get the object ID of an `UpgradeCap`. Use `getUpgradeCapObjectId` instead.',
     );
   }
 
@@ -135,14 +135,14 @@ export const getOwnedObjectId = async (
     } else if (objects.length > 1) {
       const objectsStr = JSON.stringify(objects, null, 2);
       throw new Error(
-        `Found multiple objects owned by ${owner} of type ${type}. This may mean that we've received an unexpected response from the Sui RPC and \`worm\` logic needs to be updated to handle this. Objects: ${objectsStr}`
+        `Found multiple objects owned by ${owner} of type ${type}. This may mean that we've received an unexpected response from the Sui RPC and \`worm\` logic needs to be updated to handle this. Objects: ${objectsStr}`,
       );
     } else {
       return null;
     }
   } catch (error) {
     // Handle 504 error by using findOwnedObjectByType method
-    const is504HttpError = `${error}`.includes("504 Gateway Time-out");
+    const is504HttpError = `${error}`.includes('504 Gateway Time-out');
     if (error && is504HttpError) {
       return getOwnedObjectIdPaginated(provider, owner, type);
     } else {
@@ -155,7 +155,7 @@ export const getOwnedObjectIdPaginated = async (
   provider: JsonRpcProvider,
   owner: string,
   type: string,
-  cursor?: string
+  cursor?: string,
 ): Promise<string | null> => {
   const res: PaginatedObjectsResponse = await provider.getOwnedObjects({
     owner,
@@ -170,13 +170,13 @@ export const getOwnedObjectIdPaginated = async (
     throw new SuiRpcValidationError(res);
   }
 
-  const object = res.data.find((d) => isSameType(d.data?.type || "", type));
+  const object = res.data.find((d) => isSameType(d.data?.type || '', type));
   if (!object && res.hasNextPage) {
     return getOwnedObjectIdPaginated(
       provider,
       owner,
       type,
-      res.nextCursor as string
+      res.nextCursor as string,
     );
   } else if (!object && !res.hasNextPage) {
     return null;
@@ -192,7 +192,7 @@ export const getOwnedObjectIdPaginated = async (
  */
 export async function getPackageId(
   provider: JsonRpcProvider,
-  objectId: string
+  objectId: string,
 ): Promise<string> {
   let currentPackage;
   let nextCursor;
@@ -202,18 +202,18 @@ export async function getPackageId(
       cursor: nextCursor,
     });
     currentPackage = dynamicFields.data.find((field) =>
-      field.name.type.endsWith("CurrentPackage")
+      field.name.type.endsWith('CurrentPackage'),
     );
     nextCursor = dynamicFields.hasNextPage ? dynamicFields.nextCursor : null;
   } while (nextCursor && !currentPackage);
   if (!currentPackage) {
-    throw new Error("CurrentPackage not found");
+    throw new Error('CurrentPackage not found');
   }
 
   const fields = await getObjectFields(provider, currentPackage.objectId);
   const packageId = fields?.value?.fields?.package;
   if (!packageId) {
-    throw new Error("Unable to get current package");
+    throw new Error('Unable to get current package');
   }
 
   return packageId;
@@ -221,7 +221,7 @@ export async function getPackageId(
 
 export const getPackageIdFromType = (type: string): string | null => {
   if (!isValidSuiType(type)) return null;
-  const packageId = type.split("::")[0];
+  const packageId = type.split('::')[0];
   if (!isValidSuiAddress(packageId)) return null;
   return packageId;
 };
@@ -230,7 +230,7 @@ export const getTableKeyType = (tableType: string): string | null => {
   if (!tableType) return null;
   const match = trimSuiType(tableType).match(/0x2::table::Table<(.*)>/);
   if (!match) return null;
-  const [keyType] = match[1].split(",");
+  const [keyType] = match[1].split(',');
   if (!isValidSuiType(keyType)) return null;
   return keyType;
 };
@@ -239,25 +239,25 @@ export const getTokenCoinType = async (
   provider: JsonRpcProvider,
   tokenBridgeStateObjectId: string,
   tokenAddress: Uint8Array,
-  tokenChain: number
+  tokenChain: number,
 ): Promise<string | null> => {
   const tokenBridgeStateFields = await getObjectFields(
     provider,
-    tokenBridgeStateObjectId
+    tokenBridgeStateObjectId,
   );
   if (!tokenBridgeStateFields) {
-    throw new Error("Unable to fetch object fields from token bridge state");
+    throw new Error('Unable to fetch object fields from token bridge state');
   }
 
   const coinTypes = tokenBridgeStateFields?.token_registry?.fields?.coin_types;
   const coinTypesObjectId = coinTypes?.fields?.id?.id;
   if (!coinTypesObjectId) {
-    throw new Error("Unable to fetch coin types");
+    throw new Error('Unable to fetch coin types');
   }
 
   const keyType = getTableKeyType(coinTypes?.type);
   if (!keyType) {
-    throw new Error("Unable to get key type");
+    throw new Error('Unable to get key type');
   }
 
   const response = await provider.getDynamicFieldObject({
@@ -271,11 +271,11 @@ export const getTokenCoinType = async (
     },
   });
   if (response.error) {
-    if (response.error.code === "dynamicFieldNotFound") {
+    if (response.error.code === 'dynamicFieldNotFound') {
       return null;
     }
     throw new Error(
-      `Unexpected getDynamicFieldObject response ${response.error}`
+      `Unexpected getDynamicFieldObject response ${response.error}`,
     );
   }
   const fields = getFieldsFromObjectResponse(response);
@@ -285,7 +285,7 @@ export const getTokenCoinType = async (
 export const getTokenFromTokenRegistry = async (
   provider: JsonRpcProvider,
   tokenBridgeStateObjectId: string,
-  tokenType: string
+  tokenType: string,
 ): Promise<SuiObjectResponse> => {
   if (!isValidSuiType(tokenType)) {
     throw new Error(`Invalid Sui type: ${tokenType}`);
@@ -293,25 +293,25 @@ export const getTokenFromTokenRegistry = async (
 
   const tokenBridgeStateFields = await getObjectFields(
     provider,
-    tokenBridgeStateObjectId
+    tokenBridgeStateObjectId,
   );
   if (!tokenBridgeStateFields) {
     throw new Error(
-      `Unable to fetch object fields from token bridge state. Object ID: ${tokenBridgeStateObjectId}`
+      `Unable to fetch object fields from token bridge state. Object ID: ${tokenBridgeStateObjectId}`,
     );
   }
 
   const tokenRegistryObjectId =
     tokenBridgeStateFields.token_registry?.fields?.id?.id;
   if (!tokenRegistryObjectId) {
-    throw new Error("Unable to fetch token registry object ID");
+    throw new Error('Unable to fetch token registry object ID');
   }
 
   const tokenRegistryPackageId = getPackageIdFromType(
-    tokenBridgeStateFields.token_registry?.type
+    tokenBridgeStateFields.token_registry?.type,
   );
   if (!tokenRegistryObjectId) {
-    throw new Error("Unable to fetch token registry package ID");
+    throw new Error('Unable to fetch token registry package ID');
   }
 
   return provider.getDynamicFieldObject({
@@ -340,7 +340,7 @@ export const getTokenFromTokenRegistry = async (
 export const getUpgradeCapObjectId = async (
   provider: JsonRpcProvider,
   owner: string,
-  packageId: string
+  packageId: string,
 ): Promise<string | null> => {
   const res = await provider.getOwnedObjects({
     owner,
@@ -356,9 +356,9 @@ export const getUpgradeCapObjectId = async (
   const objects = res.data.filter(
     (o) =>
       o.data?.objectId &&
-      o.data?.content?.dataType === "moveObject" &&
+      o.data?.content?.dataType === 'moveObject' &&
       normalizeSuiAddress(o.data?.content?.fields?.package) ===
-        normalizeSuiAddress(packageId)
+        normalizeSuiAddress(packageId),
   );
   if (objects.length === 1) {
     // We've found the object we're looking for
@@ -366,7 +366,7 @@ export const getUpgradeCapObjectId = async (
   } else if (objects.length > 1) {
     const objectsStr = JSON.stringify(objects, null, 2);
     throw new Error(
-      `Found multiple upgrade capabilities owned by ${owner} from package ${packageId}. Objects: ${objectsStr}`
+      `Found multiple upgrade capabilities owned by ${owner} from package ${packageId}. Objects: ${objectsStr}`,
     );
   } else {
     return null;
@@ -402,7 +402,7 @@ export const isSameType = (a: string, b: string) => {
 
 export const isSuiError = (error: any): error is SuiError => {
   return (
-    error && typeof error === "object" && "code" in error && "message" in error
+    error && typeof error === 'object' && 'code' in error && 'message' in error
   );
 };
 
@@ -417,7 +417,7 @@ export const isValidSuiAddress = (address: string): boolean =>
   isValidFullSuiAddress(normalizeSuiAddress(address));
 
 export const isValidSuiType = (type: string): boolean => {
-  const tokens = type.split("::");
+  const tokens = type.split('::');
   if (tokens.length !== 3) {
     return false;
   }
@@ -432,12 +432,12 @@ export const isValidSuiType = (type: string): boolean => {
  * @returns
  */
 export const padSuiType = (type: string): string => {
-  const tokens = type.split("::");
+  const tokens = type.split('::');
   if (tokens.length < 3 || !isValidSuiAddress(tokens[0])) {
     throw new Error(`Invalid Sui type: ${type}`);
   }
 
-  return [normalizeSuiAddress(tokens[0]), ...tokens.slice(1)].join("::");
+  return [normalizeSuiAddress(tokens[0]), ...tokens.slice(1)].join('::');
 };
 
 /**
@@ -445,4 +445,4 @@ export const padSuiType = (type: string): string => {
  * since some types returned from the RPC have leading zeroes and others don't.
  */
 export const trimSuiType = (type: string): string =>
-  type.replace(/(0x)(0*)/g, "0x");
+  type.replace(/(0x)(0*)/g, '0x');

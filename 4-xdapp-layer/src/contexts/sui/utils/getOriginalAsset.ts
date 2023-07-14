@@ -1,12 +1,17 @@
-import { MAINNET_CHAINS } from "config/MAINNET";
-import { getFieldsFromObjectResponse, getTokenFromTokenRegistry, isValidSuiType, trimSuiType } from "./utils";
-import { JsonRpcProvider } from "@mysten/sui.js";
-import { ChainId, WormholeWrappedInfo } from "types";
+import { MAINNET_CHAINS } from 'config/MAINNET';
+import {
+  getFieldsFromObjectResponse,
+  getTokenFromTokenRegistry,
+  isValidSuiType,
+  trimSuiType,
+} from './utils';
+import { JsonRpcProvider } from '@mysten/sui.js';
+import { ChainId, WormholeWrappedInfo } from 'types';
 
 export async function getOriginalAssetSui(
   provider: JsonRpcProvider,
   tokenBridgeStateObjectId: string,
-  coinType: string
+  coinType: string,
 ): Promise<WormholeWrappedInfo> {
   if (!isValidSuiType(coinType)) {
     throw new Error(`Invalid Sui type: ${coinType}`);
@@ -15,12 +20,12 @@ export async function getOriginalAssetSui(
   const res = await getTokenFromTokenRegistry(
     provider,
     tokenBridgeStateObjectId,
-    coinType
+    coinType,
   );
   const fields = getFieldsFromObjectResponse(res);
   if (!fields) {
     throw new Error(
-      `Token of type ${coinType} has not been registered with the token bridge`
+      `Token of type ${coinType} has not been registered with the token bridge`,
     );
   }
 
@@ -36,7 +41,7 @@ export async function getOriginalAssetSui(
       isWrapped: true,
       chainId: Number(fields.value.fields.info.fields.token_chain) as ChainId,
       assetAddress: new Uint8Array(
-        fields.value.fields.info.fields.token_address.fields.value.fields.data
+        fields.value.fields.info.fields.token_address.fields.value.fields.data,
       ),
     };
   } else if (type.includes(`native_asset::NativeAsset<${coinType}>`)) {
@@ -44,7 +49,7 @@ export async function getOriginalAssetSui(
       isWrapped: false,
       chainId: MAINNET_CHAINS.sui,
       assetAddress: new Uint8Array(
-        fields.value.fields.token_address.fields.value.fields.data
+        fields.value.fields.token_address.fields.value.fields.data,
       ),
     };
   }
@@ -53,7 +58,7 @@ export async function getOriginalAssetSui(
     `Unrecognized token metadata: ${JSON.stringify(
       fields,
       null,
-      2
-    )}, ${coinType}`
+      2,
+    )}, ${coinType}`,
   );
 }

@@ -27,7 +27,14 @@ import { RelayerAbstract } from '../abstracts/relayer';
 import { SolanaContext } from '../solana/context';
 import { SuiContracts } from './contracts';
 import { SuiRelayer } from './relayer';
-import { getForeignAsset, getIsTransferCompleted, getOriginalAssetSui, getPackageId, redeemOnSui, transferFromSui } from './utils';
+import {
+  getForeignAsset,
+  getIsTransferCompleted,
+  getOriginalAssetSui,
+  getPackageId,
+  redeemOnSui,
+  transferFromSui,
+} from './utils';
 
 /**
  * @category Sui

@@ -52,9 +52,7 @@ export class SolContracts extends ContractsAbstract {
    * @returns An interface for the core contract, undefined if not found
    */
   getCore(chain?: ChainName | ChainId): Program<WormholeCore> | undefined {
-    const context = this.context.getContext(
-      'solana',
-    ) as SolanaContext;
+    const context = this.context.getContext('solana') as SolanaContext;
     const connection = context.connection;
     if (!connection) throw new Error('no connection');
 
@@ -84,9 +82,7 @@ export class SolContracts extends ContractsAbstract {
    * @returns An interface for the bridge contract, undefined if not found
    */
   getBridge(chain?: ChainName | ChainId): Program<TokenBridge> | undefined {
-    const context = this.context.getContext(
-      'solana',
-    ) as SolanaContext;
+    const context = this.context.getContext('solana') as SolanaContext;
     const connection = context.connection;
     if (!connection) throw new Error('no connection');
 
@@ -117,9 +113,7 @@ export class SolContracts extends ContractsAbstract {
    * @returns An interface for the NFT bridge contract, undefined if not found
    */
   getNftBridge(chain?: ChainName | ChainId): Program<NftBridge> | undefined {
-    const context = this.context.getContext(
-      'solana',
-    ) as SolanaContext;
+    const context = this.context.getContext('solana') as SolanaContext;
     const connection = context.connection;
     if (!connection) throw new Error('no connection');
 

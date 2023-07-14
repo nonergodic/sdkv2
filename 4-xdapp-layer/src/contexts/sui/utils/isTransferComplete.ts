@@ -1,29 +1,29 @@
-import { JsonRpcProvider } from "@mysten/sui.js";
-import { getObjectFields, getTableKeyType } from "./utils";
-import { getSignedVAAHash } from "vaa";
+import { JsonRpcProvider } from '@mysten/sui.js';
+import { getObjectFields, getTableKeyType } from './utils';
+import { getSignedVAAHash } from 'vaa';
 
 export async function getIsTransferCompleted(
   provider: JsonRpcProvider,
   tokenBridgeStateObjectId: string,
-  transferVAA: Uint8Array
+  transferVAA: Uint8Array,
 ): Promise<boolean> {
   const tokenBridgeStateFields = await getObjectFields(
     provider,
-    tokenBridgeStateObjectId
+    tokenBridgeStateObjectId,
   );
   if (!tokenBridgeStateFields) {
-    throw new Error("Unable to fetch object fields from token bridge state");
+    throw new Error('Unable to fetch object fields from token bridge state');
   }
 
   const hashes = tokenBridgeStateFields.consumed_vaas?.fields?.hashes;
   const tableObjectId = hashes?.fields?.items?.fields?.id?.id;
   if (!tableObjectId) {
-    throw new Error("Unable to fetch consumed VAAs table");
+    throw new Error('Unable to fetch consumed VAAs table');
   }
 
   const keyType = getTableKeyType(hashes?.fields?.items?.type);
   if (!keyType) {
-    throw new Error("Unable to get key type");
+    throw new Error('Unable to get key type');
   }
 
   const hash = getSignedVAAHash(transferVAA);
@@ -32,7 +32,7 @@ export async function getIsTransferCompleted(
     name: {
       type: keyType,
       value: {
-        data: [...Buffer.from(hash.slice(2), "hex")],
+        data: [...Buffer.from(hash.slice(2), 'hex')],
       },
     },
   });
@@ -40,11 +40,11 @@ export async function getIsTransferCompleted(
     return true;
   }
 
-  if (response.error.code === "dynamicFieldNotFound") {
+  if (response.error.code === 'dynamicFieldNotFound') {
     return false;
   }
 
   throw new Error(
-    `Unexpected getDynamicFieldObject response ${response.error}`
+    `Unexpected getDynamicFieldObject response ${response.error}`,
   );
 }

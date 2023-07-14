@@ -89,7 +89,9 @@ export class EthContracts extends ContractsAbstract {
    *
    * @returns An interface for the NFT bridge contract, undefined if not found
    */
-  getNftBridge(chain: ChainName | ChainId): ethers_contracts.NFTBridge | undefined {
+  getNftBridge(
+    chain: ChainName | ChainId,
+  ): ethers_contracts.NFTBridge | undefined {
     const connection = this.context.mustGetConnection(chain);
     const address = this.mustGetContracts(chain).nft_bridge;
     if (!address) return undefined;

@@ -1,8 +1,13 @@
-import { ChainId } from "types";
-import { SuiCoinObject } from "./types";
-import { JsonRpcProvider, SUI_CLOCK_OBJECT_ID, SUI_TYPE_ARG, TransactionBlock } from "@mysten/sui.js";
-import { getPackageId, isSameType } from "./utils";
-import { createNonce } from "utils/createNonce";
+import { ChainId } from 'types';
+import { SuiCoinObject } from './types';
+import {
+  JsonRpcProvider,
+  SUI_CLOCK_OBJECT_ID,
+  SUI_TYPE_ARG,
+  TransactionBlock,
+} from '@mysten/sui.js';
+import { getPackageId, isSameType } from './utils';
+import { createNonce } from 'utils/createNonce';
 
 export async function transferFromSui(
   provider: JsonRpcProvider,
@@ -17,18 +22,18 @@ export async function transferFromSui(
   relayerFee: bigint = BigInt(0),
   payload: Uint8Array | null = null,
   coreBridgePackageId?: string,
-  tokenBridgePackageId?: string
+  tokenBridgePackageId?: string,
 ) {
   if (payload !== null) {
-    throw new Error("Sui transfer with payload not implemented");
+    throw new Error('Sui transfer with payload not implemented');
   }
 
   const [primaryCoin, ...mergeCoins] = coins.filter((coin) =>
-    isSameType(coin.coinType, coinType)
+    isSameType(coin.coinType, coinType),
   );
   if (primaryCoin === undefined) {
     throw new Error(
-      `Coins array doesn't contain any coins of type ${coinType}`
+      `Coins array doesn't contain any coins of type ${coinType}`,
     );
   }
 
@@ -49,7 +54,7 @@ export async function transferFromSui(
       if (mergeCoins.length) {
         tx.mergeCoins(
           primaryCoinInput,
-          mergeCoins.map((coin) => tx.object(coin.coinObjectId))
+          mergeCoins.map((coin) => tx.object(coin.coinObjectId)),
         );
       }
 

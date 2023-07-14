@@ -1,4 +1,4 @@
-import { TokenTypes } from "aptos";
+import { TokenTypes } from 'aptos';
 
 export type CreateTokenDataEvent = {
   version: string;
@@ -7,7 +7,7 @@ export type CreateTokenDataEvent = {
     account_address: string;
   };
   sequence_number: string;
-  type: "0x3::token::CreateTokenDataEvent";
+  type: '0x3::token::CreateTokenDataEvent';
   data: {
     description: string;
     id: TokenTypes.TokenDataId;

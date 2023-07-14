@@ -19,7 +19,14 @@ import { MAINNET_CHAINS } from '../../config/MAINNET';
 import { SolanaContext } from '../solana';
 import { hexToUint8Array } from 'utils/array';
 import { parseTokenTransferPayload } from 'vaa';
-import { getForeignAssetAptos, getIsTransferCompletedAptos, getTypeFromExternalAddress, isValidAptosType, redeemOnAptos, transferFromAptos } from './utils';
+import {
+  getForeignAssetAptos,
+  getIsTransferCompletedAptos,
+  getTypeFromExternalAddress,
+  isValidAptosType,
+  redeemOnAptos,
+  transferFromAptos,
+} from './utils';
 
 export const APTOS_COIN = '0x1::aptos_coin::AptosCoin';
 

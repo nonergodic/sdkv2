@@ -1,6 +1,6 @@
-import { Commitment, Connection, PublicKeyInitData } from "@solana/web3.js";
-import { ChainId } from "types";
-import { deriveWrappedMintKey, getWrappedMeta } from "./tokenBridge";
+import { Commitment, Connection, PublicKeyInitData } from '@solana/web3.js';
+import { ChainId } from 'types';
+import { deriveWrappedMintKey, getWrappedMeta } from './tokenBridge';
 
 /**
  * Returns a foreign asset address on Solana for a provided native chain and asset address
@@ -16,12 +16,12 @@ export async function getForeignAssetSolana(
   tokenBridgeAddress: PublicKeyInitData,
   originChainId: ChainId,
   originAsset: Uint8Array,
-  commitment?: Commitment
+  commitment?: Commitment,
 ): Promise<string | null> {
   const mint = deriveWrappedMintKey(
     tokenBridgeAddress,
     originChainId as number,
-    originAsset
+    originAsset,
   );
   return getWrappedMeta(connection, tokenBridgeAddress, mint, commitment)
     .catch((_) => null)

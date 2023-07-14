@@ -1,6 +1,6 @@
 import { AptosClient } from 'aptos';
 import { ChainId } from 'types';
-import { coalesceModuleAddress, getAssetFullyQualifiedType } from "./utils";
+import { coalesceModuleAddress, getAssetFullyQualifiedType } from './utils';
 
 /**
  * Get qualified type of asset on Aptos given its origin info.
@@ -14,12 +14,12 @@ export async function getForeignAssetAptos(
   client: AptosClient,
   tokenBridgeAddress: string,
   originChainId: ChainId,
-  originAddress: string
+  originAddress: string,
 ): Promise<string | null> {
   const assetFullyQualifiedType = getAssetFullyQualifiedType(
     tokenBridgeAddress,
     originChainId,
-    originAddress
+    originAddress,
   );
   if (!assetFullyQualifiedType) {
     return null;
@@ -29,7 +29,7 @@ export async function getForeignAssetAptos(
     // check if asset exists and throw if it doesn't
     await client.getAccountResource(
       coalesceModuleAddress(assetFullyQualifiedType),
-      `0x1::coin::CoinInfo<${assetFullyQualifiedType}>`
+      `0x1::coin::CoinInfo<${assetFullyQualifiedType}>`,
     );
     return assetFullyQualifiedType;
   } catch (e) {

@@ -6,11 +6,23 @@ import {
   PublicKeyInitData,
   SystemProgram,
   Transaction,
-} from "@solana/web3.js";
-import { MAINNET_CHAINS } from "config/MAINNET";
-import { SignedVaa, parseTokenTransferVaa, MAX_VAA_DECIMALS } from "vaa";
-import { createCompleteTransferNativeInstruction, createCompleteTransferWrappedInstruction } from "./tokenBridge";
-import { ACCOUNT_SIZE, NATIVE_MINT, TOKEN_PROGRAM_ID, createCloseAccountInstruction, createInitializeAccountInstruction, createTransferInstruction, getMinimumBalanceForRentExemptAccount, getMint } from "@solana/spl-token";
+} from '@solana/web3.js';
+import { MAINNET_CHAINS } from 'config/MAINNET';
+import { SignedVaa, parseTokenTransferVaa, MAX_VAA_DECIMALS } from 'vaa';
+import {
+  createCompleteTransferNativeInstruction,
+  createCompleteTransferWrappedInstruction,
+} from './tokenBridge';
+import {
+  ACCOUNT_SIZE,
+  NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
+  createCloseAccountInstruction,
+  createInitializeAccountInstruction,
+  createTransferInstruction,
+  getMinimumBalanceForRentExemptAccount,
+  getMint,
+} from '@solana/spl-token';
 
 export async function redeemOnSolana(
   connection: Connection,
@@ -19,7 +31,7 @@ export async function redeemOnSolana(
   payerAddress: PublicKeyInitData,
   signedVaa: SignedVaa,
   feeRecipientAddress?: PublicKeyInitData,
-  commitment?: Commitment
+  commitment?: Commitment,
 ) {
   const parsed = parseTokenTransferVaa(signedVaa);
   const createCompleteTransferInstruction =
@@ -33,8 +45,8 @@ export async function redeemOnSolana(
       bridgeAddress,
       payerAddress,
       parsed,
-      feeRecipientAddress
-    )
+      feeRecipientAddress,
+    ),
   );
   const { blockhash } = await connection.getLatestBlockhash(commitment);
   transaction.recentBlockhash = blockhash;
@@ -48,20 +60,20 @@ export async function redeemAndUnwrapOnSolana(
   tokenBridgeAddress: PublicKeyInitData,
   payerAddress: PublicKeyInitData,
   signedVaa: SignedVaa,
-  commitment?: Commitment
+  commitment?: Commitment,
 ) {
   const parsed = parseTokenTransferVaa(signedVaa);
   const targetPublicKey = new PublicKey(parsed.to);
   const targetAmount = await getMint(connection, NATIVE_MINT, commitment).then(
     (info) =>
-      parsed.amount * BigInt(Math.pow(10, info.decimals - MAX_VAA_DECIMALS))
+      parsed.amount * BigInt(Math.pow(10, info.decimals - MAX_VAA_DECIMALS)),
   );
   const rentBalance = await getMinimumBalanceForRentExemptAccount(
     connection,
-    commitment
+    commitment,
   );
   if (Buffer.compare(parsed.tokenAddress, NATIVE_MINT.toBuffer()) != 0) {
-    return Promise.reject("tokenAddress != NATIVE_MINT");
+    return Promise.reject('tokenAddress != NATIVE_MINT');
   }
   const payerPublicKey = new PublicKey(payerAddress);
   const ancillaryKeypair = Keypair.generate();
@@ -71,7 +83,7 @@ export async function redeemAndUnwrapOnSolana(
     tokenBridgeAddress,
     bridgeAddress,
     payerPublicKey,
-    signedVaa
+    signedVaa,
   );
 
   //This will create a temporary account where the wSOL will be moved
@@ -87,7 +99,7 @@ export async function redeemAndUnwrapOnSolana(
   const initAccountIx = createInitializeAccountInstruction(
     ancillaryKeypair.publicKey,
     NATIVE_MINT,
-    payerPublicKey
+    payerPublicKey,
   );
 
   //Send in the amount of wSOL which we want converted to SOL
@@ -95,14 +107,14 @@ export async function redeemAndUnwrapOnSolana(
     targetPublicKey,
     ancillaryKeypair.publicKey,
     payerPublicKey,
-    targetAmount.valueOf()
+    targetAmount.valueOf(),
   );
 
   //Close the ancillary account for cleanup. Payer address receives any remaining funds
   const closeAccountIx = createCloseAccountInstruction(
     ancillaryKeypair.publicKey, //account to close
     payerPublicKey, //Remaining funds destination
-    payerPublicKey //authority
+    payerPublicKey, //authority
   );
 
   const { blockhash } = await connection.getLatestBlockhash(commitment);
@@ -114,7 +126,7 @@ export async function redeemAndUnwrapOnSolana(
     createAncillaryAccountIx,
     initAccountIx,
     balanceTransferIx,
-    closeAccountIx
+    closeAccountIx,
   );
   transaction.partialSign(ancillaryKeypair);
   return transaction;

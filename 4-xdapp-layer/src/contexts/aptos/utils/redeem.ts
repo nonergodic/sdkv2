@@ -1,23 +1,26 @@
 import { AptosClient, Types } from 'aptos';
-import { MAINNET_CHAINS } from "config/MAINNET";
-import { getAssetFullyQualifiedType, getTypeFromExternalAddress } from "./utils";
-import { _parseVAAAlgorand } from "./vaa";
+import { MAINNET_CHAINS } from 'config/MAINNET';
+import {
+  getAssetFullyQualifiedType,
+  getTypeFromExternalAddress,
+} from './utils';
+import { _parseVAAAlgorand } from './vaa';
 import { ChainId } from 'types';
 
 export const completeTransferAndRegister = async (
   client: AptosClient,
   tokenBridgeAddress: string,
-  transferVAA: Uint8Array
+  transferVAA: Uint8Array,
 ): Promise<Types.EntryFunctionPayload> => {
-  if (!tokenBridgeAddress) throw new Error("Need token bridge address.");
+  if (!tokenBridgeAddress) throw new Error('Need token bridge address.');
 
   const parsedVAA = _parseVAAAlgorand(transferVAA);
   if (!parsedVAA.FromChain || !parsedVAA.Contract || !parsedVAA.ToChain) {
-    throw new Error("VAA does not contain required information");
+    throw new Error('VAA does not contain required information');
   }
 
   if (parsedVAA.ToChain !== MAINNET_CHAINS.aptos) {
-    throw new Error("Transfer is not destined for Aptos");
+    throw new Error('Transfer is not destined for Aptos');
   }
 
   // assertChain(parsedVAA.FromChain);
@@ -26,14 +29,14 @@ export const completeTransferAndRegister = async (
       ? await getTypeFromExternalAddress(
           client,
           tokenBridgeAddress,
-          parsedVAA.Contract
+          parsedVAA.Contract,
         )
       : getAssetFullyQualifiedType(
           tokenBridgeAddress,
           parsedVAA.FromChain as ChainId,
-          parsedVAA.Contract
+          parsedVAA.Contract,
         );
-  if (!assetType) throw new Error("Invalid asset address.");
+  if (!assetType) throw new Error('Invalid asset address.');
 
   return {
     function: `${tokenBridgeAddress}::complete_transfer::submit_vaa_and_register_entry`,
@@ -53,7 +56,7 @@ export const completeTransferAndRegister = async (
 export function redeemOnAptos(
   client: AptosClient,
   tokenBridgeAddress: string,
-  transferVAA: Uint8Array
+  transferVAA: Uint8Array,
 ): Promise<Types.EntryFunctionPayload> {
   return completeTransferAndRegister(client, tokenBridgeAddress, transferVAA);
 }

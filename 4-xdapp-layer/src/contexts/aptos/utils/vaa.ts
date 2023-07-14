@@ -1,4 +1,4 @@
-import { uint8ArrayToHex } from "utils/array";
+import { uint8ArrayToHex } from 'utils/array';
 
 // TODO: why does this use the Algorand method, why isn't this in the vaa folder????
 
@@ -26,14 +26,14 @@ export type ParsedVAA = {
   sequence: bigint;
   consistency: number;
   Meta:
-    | "Unknown"
-    | "TokenBridge"
-    | "TokenBridge RegisterChain"
-    | "TokenBridge UpgradeContract"
-    | "CoreGovernance"
-    | "TokenBridge Attest"
-    | "TokenBridge Transfer"
-    | "TokenBridge Transfer With Payload";
+    | 'Unknown'
+    | 'TokenBridge'
+    | 'TokenBridge RegisterChain'
+    | 'TokenBridge UpgradeContract'
+    | 'CoreGovernance'
+    | 'TokenBridge Attest'
+    | 'TokenBridge Transfer'
+    | 'TokenBridge Transfer With Payload';
   module?: Uint8Array;
   action?: number;
   targetChain?: number;
@@ -82,34 +82,34 @@ export function _parseVAAAlgorand(vaa: Uint8Array): ParsedVAA {
   off += 4;
   ret.nonce = buf.readIntBE(off, 4);
   off += 4;
-  ret.chainRaw = Buffer.from(extract3(vaa, off, 2)).toString("hex");
+  ret.chainRaw = Buffer.from(extract3(vaa, off, 2)).toString('hex');
   ret.chain = buf.readIntBE(off, 2);
   off += 2;
-  ret.emitter = Buffer.from(extract3(vaa, off, 32)).toString("hex");
+  ret.emitter = Buffer.from(extract3(vaa, off, 32)).toString('hex');
   off += 32;
   ret.sequence = buf.readBigUInt64BE(off);
   off += 8;
   ret.consistency = buf.readIntBE(off, 1);
   off += 1;
 
-  ret.Meta = "Unknown";
+  ret.Meta = 'Unknown';
 
   if (
     !Buffer.compare(
       extract3(buf, off, 32),
       Buffer.from(
-        "000000000000000000000000000000000000000000546f6b656e427269646765",
-        "hex"
-      )
+        '000000000000000000000000000000000000000000546f6b656e427269646765',
+        'hex',
+      ),
     )
   ) {
-    ret.Meta = "TokenBridge";
+    ret.Meta = 'TokenBridge';
     ret.module = extract3(vaa, off, 32);
     off += 32;
     ret.action = buf.readIntBE(off, 1);
     off += 1;
     if (ret.action === 1) {
-      ret.Meta = "TokenBridge RegisterChain";
+      ret.Meta = 'TokenBridge RegisterChain';
       ret.targetChain = buf.readIntBE(off, 2);
       off += 2;
       ret.EmitterChainID = buf.readIntBE(off, 2);
@@ -117,7 +117,7 @@ export function _parseVAAAlgorand(vaa: Uint8Array): ParsedVAA {
       ret.targetEmitter = extract3(vaa, off, 32);
       off += 32;
     } else if (ret.action === 2) {
-      ret.Meta = "TokenBridge UpgradeContract";
+      ret.Meta = 'TokenBridge UpgradeContract';
       ret.targetChain = buf.readIntBE(off, 2);
       off += 2;
       ret.newContract = extract3(vaa, off, 32);
@@ -127,12 +127,12 @@ export function _parseVAAAlgorand(vaa: Uint8Array): ParsedVAA {
     !Buffer.compare(
       extract3(buf, off, 32),
       Buffer.from(
-        "00000000000000000000000000000000000000000000000000000000436f7265",
-        "hex"
-      )
+        '00000000000000000000000000000000000000000000000000000000436f7265',
+        'hex',
+      ),
     )
   ) {
-    ret.Meta = "CoreGovernance";
+    ret.Meta = 'CoreGovernance';
     ret.module = extract3(vaa, off, 32);
     off += 32;
     ret.action = buf.readIntBE(off, 1);
@@ -148,7 +148,7 @@ export function _parseVAAAlgorand(vaa: Uint8Array): ParsedVAA {
   ret.Body = vaa.slice(off);
 
   if (vaa.slice(off).length === 100 && buf.readIntBE(off, 1) === 2) {
-    ret.Meta = "TokenBridge Attest";
+    ret.Meta = 'TokenBridge Attest';
     ret.Type = buf.readIntBE(off, 1);
     off += 1;
     ret.Contract = uint8ArrayToHex(extract3(vaa, off, 32));
@@ -163,7 +163,7 @@ export function _parseVAAAlgorand(vaa: Uint8Array): ParsedVAA {
   }
 
   if (vaa.slice(off).length === 133 && buf.readIntBE(off, 1) === 1) {
-    ret.Meta = "TokenBridge Transfer";
+    ret.Meta = 'TokenBridge Transfer';
     ret.Type = buf.readIntBE(off, 1);
     off += 1;
     ret.Amount = extract3(vaa, off, 32);
@@ -183,7 +183,7 @@ export function _parseVAAAlgorand(vaa: Uint8Array): ParsedVAA {
     return ret;
   }
   if (buf.readIntBE(off, 1) === 3) {
-    ret.Meta = "TokenBridge Transfer With Payload";
+    ret.Meta = 'TokenBridge Transfer With Payload';
     ret.Type = buf.readIntBE(off, 1);
     off += 1;
     ret.Amount = extract3(vaa, off, 32);

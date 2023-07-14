@@ -57,7 +57,11 @@ import {
 } from './utils/wormhole';
 import { TokenBridgeAbstract } from '../abstracts/tokenBridge';
 import { createNonce } from '../../utils/createNonce';
-import { getForeignAssetSolana, redeemAndUnwrapOnSolana, redeemOnSolana } from './utils';
+import {
+  getForeignAssetSolana,
+  redeemAndUnwrapOnSolana,
+  redeemOnSolana,
+} from './utils';
 
 const SOLANA_SEQ_LOG = 'Program log: Sequence: ';
 const SOLANA_CHAIN_NAME = MAINNET_CONFIG.chains.solana!.key;

@@ -1,10 +1,10 @@
 import { AptosAccount, AptosClient, HexString, TokenTypes } from 'aptos';
-import { hexZeroPad } from "ethers/lib/utils";
-import { sha3_256 } from "js-sha3";
-import { hex, ensureHexPrefix } from "utils/array";
+import { hexZeroPad } from 'ethers/lib/utils';
+import { sha3_256 } from 'js-sha3';
+import { hex, ensureHexPrefix } from 'utils/array';
 import { NftBridgeState, TokenBridgeState } from '../types';
-import { ChainId } from "types";
-import { MAINNET_CHAINS } from "config/MAINNET";
+import { ChainId } from 'types';
+import { MAINNET_CHAINS } from 'config/MAINNET';
 
 /**
  * Test if given string is a valid fully qualified type of moduleAddress::moduleName::structName.
@@ -24,14 +24,14 @@ export const isValidAptosType = (str: string): boolean =>
 export async function getTypeFromExternalAddress(
   client: AptosClient,
   tokenBridgeAddress: string,
-  fullyQualifiedTypeHash: string
+  fullyQualifiedTypeHash: string,
 ): Promise<string | null> {
   // get handle
   tokenBridgeAddress = ensureHexPrefix(tokenBridgeAddress);
   const state = (
     await client.getAccountResource(
       tokenBridgeAddress,
-      `${tokenBridgeAddress}::state::State`
+      `${tokenBridgeAddress}::state::State`,
     )
   ).data as TokenBridgeState;
   const handle = state.native_infos.handle;
@@ -40,7 +40,7 @@ export async function getTypeFromExternalAddress(
     // get type info
     const typeInfo = await client.getTableItem(handle, {
       key_type: `${tokenBridgeAddress}::token_hash::TokenHash`,
-      value_type: "0x1::type_info::TypeInfo",
+      value_type: '0x1::type_info::TypeInfo',
       key: { hash: fullyQualifiedTypeHash },
     });
 
@@ -51,12 +51,12 @@ export async function getTypeFromExternalAddress(
     // construct type
     const moduleName = Buffer.from(
       typeInfo.module_name.substring(2),
-      "hex"
-    ).toString("ascii");
+      'hex',
+    ).toString('ascii');
     const structName = Buffer.from(
       typeInfo.struct_name.substring(2),
-      "hex"
-    ).toString("ascii");
+      'hex',
+    ).toString('ascii');
     return `${typeInfo.account_address}::${moduleName}::${structName}`;
   } catch {
     return null;
@@ -78,12 +78,12 @@ export async function getTypeFromExternalAddress(
 export const getTokenIdFromTokenHash = async (
   client: AptosClient,
   nftBridgeAddress: string,
-  tokenHash: Uint8Array
+  tokenHash: Uint8Array,
 ): Promise<TokenTypes.TokenId> => {
   const state = (
     await client.getAccountResource(
       nftBridgeAddress,
-      `${nftBridgeAddress}::state::State`
+      `${nftBridgeAddress}::state::State`,
     )
   ).data as NftBridgeState;
   const handle = state.native_infos.handle;
@@ -95,7 +95,7 @@ export const getTokenIdFromTokenHash = async (
       key: {
         hash: HexString.fromUint8Array(tokenHash).hex(),
       },
-    }
+    },
   )) as TokenTypes.TokenId & { __headers: unknown };
   return { token_data_id, property_version };
 };
@@ -106,7 +106,7 @@ export const getTokenIdFromTokenHash = async (
  * @returns Module address
  */
 export const coalesceModuleAddress = (str: string): string => {
-  return str.split("::")[0];
+  return str.split('::')[0];
 };
 
 /**
@@ -121,7 +121,7 @@ export const coalesceModuleAddress = (str: string): string => {
 export const deriveResourceAccountAddress = async (
   nftBridgeAddress: string,
   originChainId: ChainId,
-  originAddress: Uint8Array
+  originAddress: Uint8Array,
 ): Promise<string | null> => {
   if (originChainId === MAINNET_CHAINS.aptos) {
     return null;
@@ -132,7 +132,7 @@ export const deriveResourceAccountAddress = async (
   const seed = Buffer.concat([chainId, Buffer.from(originAddress)]);
   const resourceAccountAddress = await AptosAccount.getResourceAccountAddress(
     nftBridgeAddress,
-    seed
+    seed,
   );
   return resourceAccountAddress.toString();
 };
@@ -147,7 +147,7 @@ export const deriveResourceAccountAddress = async (
 export const getForeignAssetAddress = (
   tokenBridgeAddress: string,
   originChain: ChainId,
-  originAddress: string
+  originAddress: string,
 ): string | null => {
   if (originChain === MAINNET_CHAINS.aptos) {
     return null;
@@ -163,10 +163,10 @@ export const getForeignAssetAddress = (
     Buffer.concat([
       hex(hexZeroPad(ensureHexPrefix(tokenBridgeAddress), 32)),
       chain,
-      Buffer.from("::", "ascii"),
+      Buffer.from('::', 'ascii'),
       hex(hexZeroPad(ensureHexPrefix(originAddress), 32)),
       DERIVE_RESOURCE_ACCOUNT_SCHEME,
-    ])
+    ]),
   );
 };
 
@@ -181,13 +181,13 @@ export const getForeignAssetAddress = (
 export const getAssetFullyQualifiedType = (
   tokenBridgeAddress: string,
   originChain: ChainId,
-  originAddress: string
+  originAddress: string,
 ): string | null => {
   // native asset
   if (originChain === MAINNET_CHAINS.aptos) {
     // originAddress should be of form address::module::type
     if (!isValidAptosType(originAddress)) {
-      console.error("Invalid qualified type");
+      console.error('Invalid qualified type');
       return null;
     }
 
@@ -198,7 +198,7 @@ export const getAssetFullyQualifiedType = (
   const wrappedAssetAddress = getForeignAssetAddress(
     tokenBridgeAddress,
     originChain,
-    originAddress
+    originAddress,
   );
   return wrappedAssetAddress
     ? `${ensureHexPrefix(wrappedAssetAddress)}::coin::T`

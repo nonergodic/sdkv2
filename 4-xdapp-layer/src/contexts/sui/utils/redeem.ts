@@ -1,6 +1,10 @@
-import { JsonRpcProvider, SUI_CLOCK_OBJECT_ID, TransactionBlock } from "@mysten/sui.js";
-import { getPackageId, getTokenCoinType, uint8ArrayToBCS } from "./utils";
-import { parseTokenTransferVaa } from "vaa";
+import {
+  JsonRpcProvider,
+  SUI_CLOCK_OBJECT_ID,
+  TransactionBlock,
+} from '@mysten/sui.js';
+import { getPackageId, getTokenCoinType, uint8ArrayToBCS } from './utils';
+import { parseTokenTransferVaa } from 'vaa';
 
 export async function redeemOnSui(
   provider: JsonRpcProvider,
@@ -8,17 +12,17 @@ export async function redeemOnSui(
   tokenBridgeStateObjectId: string,
   transferVAA: Uint8Array,
   coreBridgePackageId?: string,
-  tokenBridgePackageId?: string
+  tokenBridgePackageId?: string,
 ): Promise<TransactionBlock> {
   const { tokenAddress, tokenChain } = parseTokenTransferVaa(transferVAA);
   const coinType = await getTokenCoinType(
     provider,
     tokenBridgeStateObjectId,
     tokenAddress,
-    tokenChain
+    tokenChain,
   );
   if (!coinType) {
-    throw new Error("Unable to fetch token coinType");
+    throw new Error('Unable to fetch token coinType');
   }
 
   [coreBridgePackageId, tokenBridgePackageId] = await Promise.all([

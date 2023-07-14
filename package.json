@@ -2,12 +2,6 @@
   "name": "sdkv2",
   "version": "0.1.0",
   "license": "Apache-2.0",
-  "workspaces": [
-    "1-base-layer",
-    "2-definition-layer",
-    "3-platform-layer/*",
-    "4-xdapp-layer"
-  ],
   "devDependencies": {
     "@types/chai": "^4.3.5",
     "@types/mocha": "^10.0.1",

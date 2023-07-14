@@ -1,4 +1,4 @@
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { ChainName, ChainId } from '../../types';
 
 /**
@@ -11,7 +11,7 @@ import { ChainName, ChainId } from '../../types';
  * const coreContract = context.contracts.mustGetCore(chain);
  * coreContract.someMethod(...);
  */
-export abstract class ContractsAbstract<T extends WormholeContext> {
+export abstract class ContractsAbstract {
   /**
    * Contract addresses mapped to a ChainName
    * @internal
@@ -21,7 +21,7 @@ export abstract class ContractsAbstract<T extends WormholeContext> {
    * A reference to the chain Context
    * @internal
    */
-  protected abstract readonly context: T;
+  protected abstract readonly context: Wormhole;
 
   /**
    * Get the core wormhole contract interface

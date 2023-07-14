@@ -7,7 +7,7 @@ import {
   ChainName,
   ChainId,
 } from '../../types';
-import { WormholeContext } from 'wormhole';
+import { Wormhole } from 'wormhole';
 
 /**
  * @abstract
@@ -23,12 +23,12 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    * A standard set of methods for accessing interfaces for Wormhole contracts on a given chain
    */
   protected abstract contracts: AnyContracts;
-  protected abstract context: WormholeContext;
+  protected abstract context: Wormhole;
 
   /**
    * Send a Token Bridge transfer
    *
-   * @dev This _must_ be claimed on the destination chain, see {@link WormholeContext#redeem | redeem}
+   * @dev This _must_ be claimed on the destination chain, see {@link Wormhole#redeem | redeem}
    *
    * @param token The Token Identifier (chain/address) or `'native'` if sending the native token
    * @param amount The token amount to be sent, as a string
@@ -52,7 +52,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
   /**
    * Send a Token Bridge transfer with a payload.  The payload is used to convey extra information about a transfer to be utilized in an application
    *
-   * @dev This _must_ be claimed on the destination chain, see {@link WormholeContext#redeem | redeem}
+   * @dev This _must_ be claimed on the destination chain, see {@link Wormhole#redeem | redeem}
    *
    * @param token The Token Identifier (chain/address) or `'native'` if sending the native token
    * @param amount The token amount to be sent, as a string
@@ -91,7 +91,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
   /**
    * Format a token address to 32-bytes universal address, which can be utilized by the Wormhole contracts
    *
-   * How is this different from {@link WormholeContext#formatAddress | formatAddress}? Converting some assets to a universal representation might require querying a registry first
+   * How is this different from {@link Wormhole#formatAddress | formatAddress}? Converting some assets to a universal representation might require querying a registry first
    *
    * @param address The token address as a string
    * @returns The token address as a 32-byte Wormhole address
@@ -100,7 +100,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
   /**
    * Parse a token address from a 32-byte universal address to a cannonical token address
    *
-   * How is this different from {@link WormholeContext#parseAddress | parseAddress}? Converting some assets from a universal to cannonical representation might require querying a registry first
+   * How is this different from {@link Wormhole#parseAddress | parseAddress}? Converting some assets from a universal to cannonical representation might require querying a registry first
    *
    * @param address The 32-byte wormhole address
    * @returns The token address in the blockchain specific format

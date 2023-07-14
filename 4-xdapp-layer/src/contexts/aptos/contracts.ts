@@ -1,20 +1,18 @@
 import { ChainName, ChainId, Contracts, Context } from '../../types';
 import { ContractsAbstract } from '../abstracts/contracts';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { filterByContext } from '../../utils';
 import { AptosClient } from 'aptos';
 
 /**
  * @category Aptos
  */
-export class AptosContracts<
-  T extends WormholeContext,
-> extends ContractsAbstract<T> {
+export class AptosContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly context: T;
+  readonly context: Wormhole;
   readonly client: AptosClient;
 
-  constructor(context: T, client: AptosClient) {
+  constructor(context: Wormhole, client: AptosClient) {
     super();
     this.context = context;
     this.client = client;

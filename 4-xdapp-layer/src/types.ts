@@ -4,7 +4,7 @@ import { SuiTransactionBlockResponse } from '@mysten/sui.js';
 import { IndexedTx } from '@cosmjs/stargate';
 import { Types } from 'aptos';
 import { ParsedVaa, SignedVaa } from 'vaa';
-import { WormholeContext } from './wormhole';
+// import { Wormhole } from './wormhole';
 import { MainnetChainId, MainnetChainName } from './config/MAINNET';
 import { TestnetChainId, TestnetChainName } from './config/TESTNET';
 import { AptosContext, AptosContracts } from './contexts/aptos';
@@ -76,18 +76,18 @@ export type TokenId = {
 };
 
 export type AnyContext =
-  | EthContext<WormholeContext>
-  | SolanaContext<WormholeContext>
-  | SuiContext<WormholeContext>
-  | AptosContext<WormholeContext>
-  | SeiContext<WormholeContext>;
+  | EthContext
+  | SolanaContext
+  | SuiContext
+  | AptosContext
+  | SeiContext;
 
 export type AnyContracts =
-  | EthContracts<WormholeContext>
-  | SolContracts<WormholeContext>
-  | SuiContracts<WormholeContext>
-  | AptosContracts<WormholeContext>
-  | SeiContracts<WormholeContext>;
+  | EthContracts
+  | SolContracts
+  | SuiContracts
+  | AptosContracts
+  | SeiContracts;
 
 export interface ParsedMessage {
   sendTx: string;

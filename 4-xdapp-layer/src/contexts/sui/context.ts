@@ -30,7 +30,7 @@ import {
   TokenId,
 } from '../../types';
 import { parseTokenTransferPayload } from '../../vaa';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { RelayerAbstract } from '../abstracts/relayer';
 import { SolanaContext } from '../solana/context';
 import { SuiContracts } from './contracts';
@@ -39,15 +39,13 @@ import { SuiRelayer } from './relayer';
 /**
  * @category Sui
  */
-export class SuiContext<
-  T extends WormholeContext,
-> extends RelayerAbstract<TransactionBlock> {
+export class SuiContext extends RelayerAbstract<TransactionBlock> {
   readonly type = Context.SUI;
-  protected contracts: SuiContracts<T>;
-  readonly context: T;
+  protected contracts: SuiContracts;
+  readonly context: Wormhole;
   readonly provider: JsonRpcProvider;
 
-  constructor(context: T) {
+  constructor(context: Wormhole) {
     super();
     this.context = context;
     const connection = context.conf.rpcs.sui;
@@ -99,7 +97,7 @@ export class SuiContext<
         };
       }
       const account = await (
-        destContext as SolanaContext<WormholeContext>
+        destContext as SolanaContext
       ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
       recipientAccount = account.toString();
     }
@@ -419,7 +417,7 @@ export class SuiContext<
         };
       }
       const account = await (
-        destContext as SolanaContext<WormholeContext>
+        destContext as SolanaContext
       ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
       recipientAccount = account.toString();
     }

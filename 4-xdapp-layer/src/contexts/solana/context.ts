@@ -1,5 +1,4 @@
 import {
-  createNonce,
   getForeignAssetSolana,
   redeemAndUnwrapOnSolana,
   redeemOnSolana,
@@ -48,7 +47,7 @@ import {
   Network,
 } from '../../types';
 import { SolContracts } from './contracts';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import {
   createTransferNativeInstruction,
   createTransferWrappedInstruction,
@@ -62,6 +61,7 @@ import {
   getPostedMessage,
 } from './utils/wormhole';
 import { TokenBridgeAbstract } from '../abstracts/tokenBridge';
+import { createNonce } from '../../utils/createNonce';
 
 const SOLANA_SEQ_LOG = 'Program log: Sequence: ';
 const SOLANA_CHAIN_NAME = MAINNET_CONFIG.chains.solana!.key;
@@ -74,15 +74,13 @@ const SOLANA_TESTNET_EMITTER_ID =
 /**
  * @category Solana
  */
-export class SolanaContext<
-  T extends WormholeContext,
-> extends TokenBridgeAbstract<Transaction> {
+export class SolanaContext extends TokenBridgeAbstract<Transaction> {
   readonly type = Context.SOLANA;
-  protected contracts: SolContracts<T>;
-  readonly context: T;
+  protected contracts: SolContracts;
+  readonly context: Wormhole;
   connection: Connection | undefined;
 
-  constructor(context: T) {
+  constructor(context: Wormhole) {
     super();
     this.context = context;
     const tag = context.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
@@ -240,7 +238,7 @@ export class SolanaContext<
   /**
    * Prepare the transfer instructions for a native token bridge transfer from Solana
    *
-   * @dev This _must_ be claimed on the destination chain, see {@link WormholeContext#completeTransfer | completeTransfer}
+   * @dev This _must_ be claimed on the destination chain, see {@link Wormhole#completeTransfer | completeTransfer}
    *
    * @param senderAddress The address of the sender
    * @param amount The token amount to be sent
@@ -361,7 +359,7 @@ export class SolanaContext<
   /**
    * Prepare the transfer instructions for a token bridge transfer from Solana
    *
-   * @dev This _must_ be claimed on the destination chain, see {@link WormholeContext#completeTransfer | completeTransfer}
+   * @dev This _must_ be claimed on the destination chain, see {@link Wormhole#completeTransfer | completeTransfer}
    *
    * @param senderAddress The address of the sender
    * @param amount The token amount to be sent

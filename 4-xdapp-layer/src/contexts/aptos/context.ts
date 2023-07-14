@@ -1,4 +1,7 @@
 import { BigNumber } from 'ethers';
+import { sha3_256 } from 'js-sha3';
+import { arrayify, hexlify, stripZeros, zeroPad } from 'ethers/lib/utils';
+import { AptosClient, CoinClient, Types } from 'aptos';
 import {
   TokenId,
   ParsedRelayerMessage,
@@ -9,40 +12,28 @@ import {
   Context,
   ParsedRelayerPayload,
 } from '../../types';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { TokenBridgeAbstract } from '../abstracts/tokenBridge';
 import { AptosContracts } from './contracts';
-import { AptosClient, CoinClient, Types } from 'aptos';
-import {
-  getForeignAssetAptos,
-  getIsTransferCompletedAptos,
-  getTypeFromExternalAddress,
-  hexToUint8Array,
-  isValidAptosType,
-  parseTokenTransferPayload,
-  redeemOnAptos,
-  transferFromAptos,
-} from '@certusone/wormhole-sdk';
-import { arrayify, hexlify, stripZeros, zeroPad } from 'ethers/lib/utils';
-import { sha3_256 } from 'js-sha3';
 import { MAINNET_CHAINS } from '../../config/MAINNET';
 import { SolanaContext } from '../solana';
+import { hexToUint8Array } from 'utils/array';
+import { parseTokenTransferPayload } from 'vaa';
+import { getForeignAssetAptos, getIsTransferCompletedAptos, getTypeFromExternalAddress, isValidAptosType, redeemOnAptos, transferFromAptos } from './utils';
 
 export const APTOS_COIN = '0x1::aptos_coin::AptosCoin';
 
 /**
  * @category Aptos
  */
-export class AptosContext<
-  T extends WormholeContext,
-> extends TokenBridgeAbstract<Types.EntryFunctionPayload> {
+export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload> {
   readonly type = Context.APTOS;
-  protected contracts: AptosContracts<T>;
-  readonly context: T;
+  protected contracts: AptosContracts;
+  readonly context: Wormhole;
   readonly aptosClient: AptosClient;
   readonly coinClient: CoinClient;
 
-  constructor(context: T) {
+  constructor(context: Wormhole) {
     super();
     this.context = context;
     const rpc = context.conf.rpcs.aptos;
@@ -75,7 +66,7 @@ export class AptosContext<
         };
       }
       const account = await (
-        destContext as SolanaContext<WormholeContext>
+        destContext as SolanaContext
       ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
       recipientAccount = account.toString();
     }
@@ -97,6 +88,7 @@ export class AptosContext<
       recipientChainId,
       formattedRecipientAccount,
       relayerFee,
+      undefined,
     );
     return payload;
   }

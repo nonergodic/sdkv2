@@ -24,7 +24,7 @@ import {
 import { SeiContext } from './contexts/sei';
 
 /**
- * The WormholeContext manages connections to Wormhole Core, Bridge and NFT Bridge contracts.
+ * The Wormhole class manages connections to Wormhole Core, Bridge and NFT Bridge contracts.
  * It inherits from the {@link MultiProvider}, and ensures that its contracts
  * always use the latest registered providers and signers.
  *
@@ -33,7 +33,7 @@ import { SeiContext } from './contexts/sei';
  *
  * @example
  * // Set up mainnet and then access contracts as below:
- * const context = new WormholeContext(Network.Mainnet);
+ * const context = new Wormhole(Network.Mainnet);
  * let bridge = context.mustGetBridge('ethereum');
  *
  * // interact easily with any chain!
@@ -51,7 +51,7 @@ import { SeiContext } from './contexts/sei';
  *   '0x789..., // recipient address on destination chain
  * )
  */
-export class WormholeContext extends MultiProvider<Domain> {
+export class Wormhole extends MultiProvider<Domain> {
   protected _contexts: Map<Context, AnyContext>;
   readonly conf: WormholeConfig;
 
@@ -254,7 +254,7 @@ export class WormholeContext extends MultiProvider<Domain> {
   /**
    * Send a Token Bridge transfer
    *
-   * @dev This _must_ be claimed on the destination chain, see {@link WormholeContext#completeTransfer | completeTransfer}
+   * @dev This _must_ be claimed on the destination chain, see {@link Wormhole#completeTransfer | completeTransfer}
    *
    * @param token The Token Identifier (chain/address) or `'native'` if sending the native token
    * @param amount The token amount to be sent, as a string
@@ -281,7 +281,7 @@ export class WormholeContext extends MultiProvider<Domain> {
 
     if (!payload && recipientChain === 'sei') {
       const { payload: seiPayload, receiver } = await (
-        this.getContext('sei') as SeiContext<WormholeContext>
+        this.getContext('sei') as SeiContext
       ).buildSendPayload(token, recipientAddress);
       recipientAddress = receiver || recipientAddress;
       payload = seiPayload || payload;

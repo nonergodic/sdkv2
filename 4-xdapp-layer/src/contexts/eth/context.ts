@@ -2,7 +2,6 @@ import {
   Implementation__factory,
   TokenImplementation__factory,
 } from '@certusone/wormhole-sdk/lib/cjs/ethers-contracts';
-import { createNonce } from '@certusone/wormhole-sdk';
 import {
   BigNumber,
   BigNumberish,
@@ -12,8 +11,8 @@ import {
   Overrides,
   PayableOverrides,
   PopulatedTransaction,
+  utils,
 } from 'ethers';
-import { utils } from 'ethers';
 
 import {
   TokenId,
@@ -25,12 +24,12 @@ import {
   Context,
   ParsedRelayerPayload,
 } from '../../types';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { EthContracts } from './contracts';
 import { parseVaa } from '../../vaa';
 import { RelayerAbstract } from '../abstracts/relayer';
 import { SolanaContext } from '../solana';
-import { arrayify } from 'ethers/lib/utils';
+import { createNonce } from 'utils/createNonce';
 
 export * from './contracts';
 
@@ -38,10 +37,10 @@ export * from './contracts';
  * @category EVM
  */
 export class EthContext<
-  T extends WormholeContext,
+  T extends Wormhole,
 > extends RelayerAbstract<ethers.ContractReceipt> {
   readonly type = Context.ETH;
-  readonly contracts: EthContracts<T>;
+  readonly contracts: EthContracts;
   readonly context: T;
 
   constructor(context: T) {
@@ -203,7 +202,7 @@ export class EthContext<
         };
       }
       const account = await (
-        destContext as SolanaContext<WormholeContext>
+        destContext as SolanaContext
       ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
       recipientAccount = account.toString();
     }
@@ -306,7 +305,7 @@ export class EthContext<
   /**
    * Prepares a send tx for a Token Bridge transfer with a payload.  The payload is used to convey extra information about a transfer to be utilized in an application
    *
-   * @dev This _must_ be claimed on the destination chain, see {@link WormholeContext#redeem | redeem}
+   * @dev This _must_ be claimed on the destination chain, see {@link Wormhole#redeem | redeem}
    *
    * @param token The Token Identifier (chain/address) or `'native'` if sending the native token
    * @param amount The token amount to be sent
@@ -592,7 +591,7 @@ export class EthContext<
        */
       const relayerPayload: ParsedRelayerPayload =
         destContext.parseRelayerPayload(
-          Buffer.from(arrayify(parsedTransfer.payload)),
+          Buffer.from(utils.arrayify(parsedTransfer.payload)),
         );
 
       const tokenContext = this.context.getContext(

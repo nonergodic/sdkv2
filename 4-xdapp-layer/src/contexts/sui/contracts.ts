@@ -1,6 +1,6 @@
 import { ChainName, ChainId, Contracts, Context } from '../../types';
 import { ContractsAbstract } from '../abstracts/contracts';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { filterByContext } from '../../utils';
 import { SuiRelayer } from './relayer';
 import { JsonRpcProvider } from '@mysten/sui.js';
@@ -8,14 +8,12 @@ import { JsonRpcProvider } from '@mysten/sui.js';
 /**
  * @category Sui
  */
-export class SuiContracts<
-  T extends WormholeContext,
-> extends ContractsAbstract<T> {
+export class SuiContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly context: T;
+  readonly context: Wormhole;
   readonly provider: JsonRpcProvider;
 
-  constructor(context: T, provider: JsonRpcProvider) {
+  constructor(context: Wormhole, provider: JsonRpcProvider) {
     super();
     this.context = context;
     this.provider = provider;

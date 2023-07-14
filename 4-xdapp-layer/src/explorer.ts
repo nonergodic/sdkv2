@@ -1,5 +1,5 @@
 import { ChainId, ChainName, Network } from 'types';
-import { WormholeContext } from 'wormhole';
+import { Wormhole } from 'wormhole';
 
 type ExplorerSettings = {
   name: string;
@@ -222,7 +222,7 @@ export function linkToTx(
   txId: string,
   network: Network,
 ): string {
-  const chainName = new WormholeContext(network).toChainName(chain);
+  const chainName = new Wormhole(network).toChainName(chain);
   const explorerConfig =
     network === Network.MAINNET
       ? MAINNET_EXPLORER_CONFIG
@@ -239,7 +239,7 @@ export function linkToAccount(
   account: string,
   network: Network,
 ): string {
-  const chainName = new WormholeContext(network).toChainName(chain);
+  const chainName = new Wormhole(network).toChainName(chain);
   const explorerConfig =
     network === Network.MAINNET
       ? MAINNET_EXPLORER_CONFIG

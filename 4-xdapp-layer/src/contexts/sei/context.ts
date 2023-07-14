@@ -37,7 +37,7 @@ import {
   ParsedRelayerPayload,
   TokenId,
 } from '../../types';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { TokenBridgeAbstract } from '../abstracts/tokenBridge';
 import { SeiContracts } from './contracts';
 import { SolanaContext } from '../solana';
@@ -137,12 +137,10 @@ const buildExecuteMsg = (
  *
  * @category Sei
  */
-export class SeiContext<
-  T extends WormholeContext,
-> extends TokenBridgeAbstract<SeiTransaction> {
+export class SeiContext extends TokenBridgeAbstract<SeiTransaction> {
   readonly type = Context.SEI;
-  readonly contracts: SeiContracts<T>;
-  readonly context: T;
+  readonly contracts: SeiContracts;
+  readonly context: Wormhole;
 
   private wasmClient?: CosmWasmClient;
 
@@ -150,10 +148,10 @@ export class SeiContext<
   private readonly CHAIN = 'sei';
   private readonly REDEEM_EVENT_DEFAULT_MAX_BLOCKS = 2000;
 
-  constructor(context: T) {
+  constructor(context: Wormhole) {
     super();
     this.context = context;
-    this.contracts = new SeiContracts<T>(context);
+    this.contracts = new SeiContracts(context);
   }
 
   async startTransfer(
@@ -176,7 +174,7 @@ export class SeiContext<
       let tokenId = token;
       // todo: fix for native sui when implemented
       const account = await (
-        destContext as SolanaContext<WormholeContext>
+        destContext as SolanaContext
       ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
       recipientAccount = account.toString();
     }

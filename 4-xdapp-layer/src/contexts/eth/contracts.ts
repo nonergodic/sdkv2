@@ -1,6 +1,6 @@
 import { ethers_contracts } from '@certusone/wormhole-sdk';
 import {
-  Wormhole,
+  Wormhole as Core,
   Bridge,
   NFTBridge,
 } from '@certusone/wormhole-sdk/lib/cjs/ethers-contracts';
@@ -9,20 +9,18 @@ import { ChainName, ChainId, Contracts, Context } from '../../types';
 import { TokenBridgeRelayer } from '../../abis/TokenBridgeRelayer';
 import { TokenBridgeRelayer__factory } from '../../abis/TokenBridgeRelayer__factory';
 import { ContractsAbstract } from '../abstracts/contracts';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { filterByContext } from '../../utils';
 
 /**
  * @category EVM
  * Evm Contracts class. Contains methods for accessing ts interfaces for all available contracts
  */
-export class EthContracts<
-  T extends WormholeContext,
-> extends ContractsAbstract<T> {
+export class EthContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly context: T;
+  readonly context: Wormhole;
 
-  constructor(context: T) {
+  constructor(context: Wormhole) {
     super();
     this.context = context;
     this._contracts = new Map();
@@ -49,7 +47,7 @@ export class EthContracts<
    *
    * @returns An interface for the core contract, undefined if not found
    */
-  getCore(chain: ChainName | ChainId): Wormhole | undefined {
+  getCore(chain: ChainName | ChainId): Core | undefined {
     const connection = this.context.mustGetConnection(chain);
     const address = this.mustGetContracts(chain).core;
     if (!address) return undefined;
@@ -61,7 +59,7 @@ export class EthContracts<
    *
    * @returns An interface for the core contract, errors if not found
    */
-  mustGetCore(chain: ChainName | ChainId): Wormhole {
+  mustGetCore(chain: ChainName | ChainId): Core {
     const core = this.getCore(chain);
     if (!core) throw new Error(`Core contract for domain ${chain} not found`);
     return core;

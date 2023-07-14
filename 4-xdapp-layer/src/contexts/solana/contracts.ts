@@ -2,12 +2,12 @@ import { Connection, clusterApiUrl } from '@solana/web3.js';
 import { Program } from '@project-serum/anchor';
 import { TokenBridge } from '@certusone/wormhole-sdk/lib/cjs/solana/types/tokenBridge';
 import { NftBridge } from '@certusone/wormhole-sdk/lib/cjs/solana/types/nftBridge';
-import { Wormhole } from '@certusone/wormhole-sdk/lib/cjs/solana/types/wormhole';
+import { Wormhole as WormholeCore } from '@certusone/wormhole-sdk/lib/cjs/solana/types/wormhole';
 
 import { ChainName, ChainId, Contracts, Context, Network } from '../../types';
 import { TokenBridgeRelayer } from '../../abis/TokenBridgeRelayer';
 import { ContractsAbstract } from '../abstracts/contracts';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { filterByContext } from '../../utils';
 import { SolanaContext } from './context';
 import { createReadOnlyWormholeProgramInterface } from './utils/wormhole';
@@ -17,14 +17,12 @@ import { createReadOnlyNftBridgeProgramInterface } from './utils/nftBridge';
 /**
  * @category Solana
  */
-export class SolContracts<
-  T extends WormholeContext,
-> extends ContractsAbstract<T> {
+export class SolContracts extends ContractsAbstract {
   connection: Connection | undefined;
   protected _contracts: Map<ChainName, any>;
-  readonly context: T;
+  readonly context: Wormhole;
 
-  constructor(context: T) {
+  constructor(context: Wormhole) {
     super();
     this.context = context;
     const tag = context.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
@@ -53,10 +51,10 @@ export class SolContracts<
    *
    * @returns An interface for the core contract, undefined if not found
    */
-  getCore(chain?: ChainName | ChainId): Program<Wormhole> | undefined {
+  getCore(chain?: ChainName | ChainId): Program<WormholeCore> | undefined {
     const context = this.context.getContext(
       'solana',
-    ) as SolanaContext<WormholeContext>;
+    ) as SolanaContext;
     const connection = context.connection;
     if (!connection) throw new Error('no connection');
 
@@ -74,7 +72,7 @@ export class SolContracts<
    *
    * @returns An interface for the core contract, errors if not found
    */
-  mustGetCore(chain?: ChainName | ChainId): Program<Wormhole> {
+  mustGetCore(chain?: ChainName | ChainId): Program<WormholeCore> {
     const core = this.getCore(chain);
     if (!core) throw new Error(`Core contract for domain ${chain} not found`);
     return core;
@@ -88,7 +86,7 @@ export class SolContracts<
   getBridge(chain?: ChainName | ChainId): Program<TokenBridge> | undefined {
     const context = this.context.getContext(
       'solana',
-    ) as SolanaContext<WormholeContext>;
+    ) as SolanaContext;
     const connection = context.connection;
     if (!connection) throw new Error('no connection');
 
@@ -121,7 +119,7 @@ export class SolContracts<
   getNftBridge(chain?: ChainName | ChainId): Program<NftBridge> | undefined {
     const context = this.context.getContext(
       'solana',
-    ) as SolanaContext<WormholeContext>;
+    ) as SolanaContext;
     const connection = context.connection;
     if (!connection) throw new Error('no connection');
 

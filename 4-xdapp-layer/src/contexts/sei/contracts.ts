@@ -1,15 +1,13 @@
 import { ChainName, ChainId, Context, Contracts } from '../../types';
 import { filterByContext } from '../../utils';
-import { WormholeContext } from '../../wormhole';
+import { Wormhole } from '../../wormhole';
 import { ContractsAbstract } from '../abstracts/contracts';
 
-export class SeiContracts<
-  T extends WormholeContext,
-> extends ContractsAbstract<T> {
+export class SeiContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  protected context: T;
+  protected context: Wormhole;
 
-  constructor(context: T) {
+  constructor(context: Wormhole) {
     super();
     this.context = context;
     this._contracts = new Map();

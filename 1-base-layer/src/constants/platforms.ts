@@ -8,20 +8,30 @@ export const PlatformToChainsMapping = {
   Evm: [
     "Ethereum", "Bsc", "Polygon", "Avalanche", "Oasis", "Aurora", "Fantom", "Karura", "Acala",
     "Klaytn", "Celo", "Moonbeam", "Neon", "Arbitrum", "Optimism" , "Gnosis", "Base", "Sepolia",
-  ],
-  Solana: ["Solana", "Pythnet"],
-  Cosmwasm: ["Terra", "Terra2", "Injective", "Xpla", "Sei"],
-} as const satisfies Record<string, readonly Chain[]>;
+  ] satisfies readonly Chain[],
+  Solana: ["Solana", "Pythnet"] satisfies readonly Chain[],
+  Cosmwasm: ["Terra", "Terra2", "Injective", "Xpla", "Sei"] satisfies readonly Chain[],
+  Btc: ["Btc"] satisfies readonly Chain[],
+  //TODO don't know if any of the following chains actually share a platform with any other chain
+  Algorand: ["Algorand"] satisfies readonly Chain[],
+  Sui: ["Sui"] satisfies readonly Chain[],
+  Aptos: ["Aptos"] satisfies readonly Chain[],
+  Osmosis: ["Osmosis"] satisfies readonly Chain[],
+  Wormchain: ["Wormchain"] satisfies readonly Chain[],
+  Near: ["Near"] satisfies readonly Chain[],
+} as const;
 
-export const ChainsToPlatformMapping = reverseArrayMapping(PlatformToChainsMapping);
+export const ChainToPlatformMapping = reverseArrayMapping(PlatformToChainsMapping);
 
 export type Platform = keyof typeof PlatformToChainsMapping;
 
+export type ToPlatform<C extends Chain> = typeof ChainToPlatformMapping[C];
+
+export const toPlatform = (chain: Chain) =>
+  ChainToPlatformMapping[chain];
+
 export const inPlatform = (chain: Chain, platform: Platform): boolean =>
   (PlatformToChainsMapping[platform] as readonly Chain[]).includes(chain);
-
-export const toPlatform = (chain: Chain & keyof typeof ChainsToPlatformMapping) =>
-  ChainsToPlatformMapping[chain];
 
 //TODO platform specific functions, e.g.:
 //  evm chain id <-> (Chain, Network)

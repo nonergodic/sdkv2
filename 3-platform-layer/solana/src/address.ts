@@ -1,6 +1,5 @@
-import { isHexByteString, hexByteStringToUint8Array } from "../../wormhole-base/utils/hexstring";
-import { Address } from "../../../2-definition-layer/address";
-import { UniversalAddress } from "../../../2-definition-layer/universalAddress";
+import { isHexByteString, hexByteStringToUint8Array } from "wormhole-base";
+import { Address, registerNative, UniversalAddress } from "wormhole-definitions";
 
 import { PublicKey, PublicKeyInitData } from "@solana/web3.js";
 
@@ -24,22 +23,10 @@ export class SolanaAddress implements Address {
       this.address = new PublicKey(address);
   }
 
-  get(): PublicKey {
-    return this.address;
-  }
-
-  toString(): string {
-    return this.address.toBase58();
-  }
-
-  toUint8Array(): Uint8Array {
-    return this.address.toBytes();
-  }
-
-  toUniversalAddress(): UniversalAddress {
-    return new UniversalAddress(this.address.toBytes());
-  }
-
+  unwrap(): PublicKey { return this.address; }
+  toString() { return this.address.toBase58(); }
+  toUint8Array() { return this.address.toBytes(); }
+  toUniversalAddress() { return new UniversalAddress(this.address.toBytes()); }
   isValidAddress(address: string): boolean {
     try {
       new PublicKey(address);
@@ -51,4 +38,4 @@ export class SolanaAddress implements Address {
   }
 }
 
-UniversalAddress.registerNative("Solana", SolanaAddress);
+registerNative("Solana", SolanaAddress);

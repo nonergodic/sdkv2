@@ -1,6 +1,4 @@
-import { Address } from "../../../2-definition-layer/address";
-import { UniversalAddress } from "../../../2-definition-layer/universalAddress";
-
+import { Address, registerNative, UniversalAddress } from "wormhole-definitions";
 import { ethers } from "ethers";
 
 declare global { namespace Wormhole {
@@ -22,7 +20,7 @@ export class EvmAddress implements Address {
           `Invalid EVM address, expected ${EvmAddress.byteSize}-byte hex string but got ${address}`
         );
       
-      this.address = ethers.utils.getAddress(address);
+      this.address = ethers.getAddress(address);
     }
     else if (address instanceof Uint8Array) {
       if (address.length !== EvmAddress.byteSize)
@@ -30,34 +28,22 @@ export class EvmAddress implements Address {
           `Invalid EVM address, expected ${EvmAddress.byteSize} bytes but got ${address.length}`
         );
       
-      this.address = ethers.utils.getAddress(ethers.utils.hexlify(address));
+      this.address = ethers.getAddress(ethers.hexlify(address));
     }
     else if (address instanceof UniversalAddress) {
-      this.address = ethers.utils.getAddress(address.toString());
+      this.address = ethers.getAddress(address.toString());
     }
     else
       throw new Error(`Invalid EVM address ${address}`);
   }
 
-  get(): string {
-    return this.address;
+  unwrap(): string { return this.address; }
+  toString() { return this.address; }
+  toUint8Array() { return ethers.getBytes(this.address); }
+  toUniversalAddress() {
+    return new UniversalAddress(ethers.zeroPadValue(this.address, UniversalAddress.byteSize));
   }
-
-  toString(): string {
-    return this.address;
-  }
-
-  toUint8Array(): Uint8Array {
-    return ethers.utils.arrayify(this.address);
-  }
-
-  toUniversalAddress(): UniversalAddress {
-    return new UniversalAddress(ethers.utils.hexZeroPad(this.address, UniversalAddress.byteSize));
-  }
-
-  static isValidAddress(address: string): boolean {
-    return ethers.utils.isAddress(address);
-  }
+  static isValidAddress(address: string) { return ethers.isAddress(address); }
 }
 
-UniversalAddress.registerNative("Evm", EvmAddress);
+registerNative("Evm", EvmAddress);

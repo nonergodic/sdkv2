@@ -2,15 +2,9 @@ import {Chain} from "./chains";
 import {Network} from "./networks";
 import {Module} from "./modules";
 
-//TODO: having Unset and Sepolia (for mainnet and devnet) in here isn't particularly kosher
+//TODO: having Sepolia (for mainnet and devnet) in here isn't particularly kosher
 export const contracts = {
   Mainnet: {
-    Unset: {
-      CoreBridge: undefined,
-      TokenBridge: undefined,
-      NftBridge: undefined,
-      Relayer: undefined,
-    },
     Solana: {
       CoreBridge: "worm2ZoG2kUd4vFXhvjh93UUH596ayRfgQ2MgjNMTth",
       TokenBridge: "wormDTUJ6AWPNvk59vGQbDvGJmqbDTdgWgAqcLBCgUb",
@@ -211,12 +205,6 @@ export const contracts = {
     },
   },
   "Testnet": {
-    Unset: {
-      CoreBridge: undefined,
-      TokenBridge: undefined,
-      NftBridge: undefined,
-      Relayer: undefined,
-    },
     Solana: {
       CoreBridge: "3u8hJUVTA4jH1wYAyUur7FFZVQ8H635K3tSHHF4ssjQ5",
       TokenBridge: "DZnkkTmCiFWfYTfT41X3Rd1kDgozqzxWaHqsw6W4x2oe",
@@ -416,12 +404,6 @@ export const contracts = {
     },
   },
   "Devnet": {
-    Unset: {
-      CoreBridge: undefined,
-      TokenBridge: undefined,
-      NftBridge: undefined,
-      Relayer: undefined,
-    },
     Solana: {
       CoreBridge: "Bridge1p5gheXUvJ6jGWGeCsgPKgnE3YgdGKRVCMY9o",
       TokenBridge: "B6RHG3mfcckmrYN1UhmJzyS1XX3fZKbkeUcpJe9Sy3FE",

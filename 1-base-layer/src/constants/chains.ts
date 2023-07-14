@@ -1,8 +1,11 @@
 import { reverseMapping } from "../utils/mapping";
 
+//we are not including Unset here because from the PoV of the SDK, it's not a chainId like the
+//  others because it has no other types associated with it (such as a platform). Including this
+//  null value would make all the other mappings a lot more messy, or would force us to introduce
+//  two types of each mapping (one with Unset and one without).
 export const ChainToChainIdMapping = {
-  //TODO I'm not convinced it's a good idea to have Unset in here ('off' is not a TV channel either)
-  Unset: 0,
+  //Unset: 0
   Solana: 1,
   Ethereum: 2,
   Terra: 3,

@@ -84,11 +84,13 @@ export interface BigintLayoutItem extends LayoutItemBase<"uint"> {
 export interface BytesLayoutItem extends LayoutItemBase<"bytes"> {
   size?: number,
   custom?: Uint8Array | CustomConversion<Uint8Array, any>,
+  //TODO what about variable sized byte "arrays"?
 };
 
 export interface ArrayLayoutItem extends LayoutItemBase<"array"> {
   size?: NumberSize, 
   elements: readonly LayoutItem[],
+  //TODO allow custom conversion for arrays?
 };
 
 export type UintLayoutItem = NumberLayoutItem | BigintLayoutItem;

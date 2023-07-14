@@ -1,6 +1,7 @@
 {
   "name": "wormhole-solana",
   "version": "0.1.0",
+  "main": "src/index.ts",
   "dependencies": {
     "wormhole-base": "^0.1.0",
     "wormhole-definitions": "^0.1.0",

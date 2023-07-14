@@ -1,4 +1,4 @@
-import { keccak256 } from '@certusone/wormhole-sdk';
+import { keccak256 } from 'ethers/lib/utils';
 
 export { isBytes } from 'ethers/lib/utils';
 
@@ -51,6 +51,6 @@ export function parseVaa(vaa: SignedVaa): ParsedVaa {
     sequence: body.readBigUInt64BE(42),
     consistencyLevel: body[50],
     payload: body.subarray(51),
-    hash: keccak256(keccak256(body)),
+    hash: Buffer.from(keccak256(keccak256(body))),
   };
 }

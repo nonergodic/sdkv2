@@ -1,12 +1,7 @@
 import {
-  CHAIN_ID_SEI,
-  WormholeWrappedInfo,
   buildTokenId,
   cosmos,
-  hexToUint8Array,
   isNativeCosmWasmDenom,
-  parseTokenTransferPayload,
-  parseVaa,
 } from '@certusone/wormhole-sdk';
 import { CosmWasmClient } from '@cosmjs/cosmwasm-stargate';
 import { EncodeObject, decodeTxRaw } from '@cosmjs/proto-signing';
@@ -20,6 +15,7 @@ import {
 import base58 from 'bs58';
 import { MsgExecuteContract } from 'cosmjs-types/cosmwasm/wasm/v1/tx';
 import { BigNumber, BigNumberish } from 'ethers';
+import axios from 'axios';
 import {
   arrayify,
   base64,
@@ -36,13 +32,16 @@ import {
   ParsedRelayerMessage,
   ParsedRelayerPayload,
   TokenId,
-} from '../../types';
+  WormholeWrappedInfo,
+} from 'types';
 import { Wormhole } from '../../wormhole';
 import { TokenBridgeAbstract } from '../abstracts/tokenBridge';
 import { SeiContracts } from './contracts';
 import { SolanaContext } from '../solana';
-import axios from 'axios';
+import { MAINNET_CHAINS } from 'config/MAINNET';
 import { stripHexPrefix } from '../../utils';
+import { hexToUint8Array } from 'utils/array';
+import { parseTokenTransferPayload, parseVaa } from 'vaa';
 
 interface WrappedRegistryResponse {
   address: string;
@@ -536,7 +535,7 @@ export class SeiContext extends TokenBridgeAbstract<SeiTransaction> {
   async getOriginalAssetSei(
     wrappedAddress: string,
   ): Promise<WormholeWrappedInfo> {
-    const chainId = CHAIN_ID_SEI;
+    const chainId = MAINNET_CHAINS.sei;
     if (isNativeCosmWasmDenom(chainId, wrappedAddress)) {
       return {
         isWrapped: false,

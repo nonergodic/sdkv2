@@ -1,7 +1,10 @@
 import { Parser } from 'binary-parser';
 import { BigNumber, ethers } from 'ethers';
-import { solidityKeccak256 } from 'ethers/lib/utils';
+import { hexlify, keccak256, solidityKeccak256 } from 'ethers/lib/utils';
 import * as elliptic from 'elliptic';
+import { SignedVaa, parseVaa } from './wormhole';
+
+export const MAX_VAA_DECIMALS = 8;
 
 export interface Signature {
   guardianSetIndex: number;
@@ -275,6 +278,10 @@ export function sign(signers: string[], vaa: VAA<Payload>): Signature[] {
       signature: packed,
     };
   });
+}
+
+export function getSignedVAAHash(signedVaa: SignedVaa): string {
+  return hexlify(keccak256(parseVaa(signedVaa).hash));
 }
 
 // Parse an address of given length, and render it as hex

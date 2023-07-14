@@ -123,6 +123,12 @@ export type TokenDetails = {
   decimals: number;
 };
 
+export interface WormholeWrappedInfo {
+  isWrapped: boolean;
+  chainId: ChainId;
+  assetAddress: Uint8Array;
+}
+
 export type SendResult = Awaited<ReturnType<AnyContext['startTransfer']>>;
 export type RedeemResult = Awaited<ReturnType<AnyContext['completeTransfer']>>;
 

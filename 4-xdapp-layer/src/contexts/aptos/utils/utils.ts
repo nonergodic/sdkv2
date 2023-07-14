@@ -1,15 +1,10 @@
 import { AptosAccount, AptosClient, HexString, TokenTypes } from 'aptos';
-import { hexZeroPad, hexlify, keccak256 } from "ethers/lib/utils";
+import { hexZeroPad } from "ethers/lib/utils";
 import { sha3_256 } from "js-sha3";
-import { SignedVaa, parseVaa } from "vaa";
 import { hex, ensureHexPrefix } from "utils/array";
 import { NftBridgeState, TokenBridgeState } from '../types';
 import { ChainId } from "types";
 import { MAINNET_CHAINS } from "config/MAINNET";
-
-export function getSignedVAAHash(signedVaa: SignedVaa): string {
-  return hexlify(keccak256(parseVaa(signedVaa).hash));
-}
 
 /**
  * Test if given string is a valid fully qualified type of moduleAddress::moduleName::structName.

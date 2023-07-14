@@ -1,7 +1,7 @@
 import { AptosClient } from 'aptos';
 import { ensureHexPrefix } from "utils/array";
 import { NftBridgeState } from '../types';
-import { getSignedVAAHash } from "./utils";
+import { getSignedVAAHash } from 'vaa';
 
 export async function getIsTransferCompletedAptos(
   client: AptosClient,

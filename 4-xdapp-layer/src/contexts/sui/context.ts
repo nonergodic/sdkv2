@@ -10,16 +10,8 @@ import {
   isValidSuiAddress,
 } from '@mysten/sui.js';
 import { BigNumber, BigNumberish } from 'ethers';
-
-import {
-  getForeignAssetSui,
-  getIsTransferCompletedSui,
-  getOriginalAssetSui,
-  redeemOnSui,
-  transferFromSui,
-} from '@certusone/wormhole-sdk';
-import { getPackageId } from '@certusone/wormhole-sdk/lib/cjs/sui';
 import { arrayify, hexlify } from 'ethers/lib/utils';
+
 import {
   ChainId,
   ChainName,
@@ -35,6 +27,7 @@ import { RelayerAbstract } from '../abstracts/relayer';
 import { SolanaContext } from '../solana/context';
 import { SuiContracts } from './contracts';
 import { SuiRelayer } from './relayer';
+import { getForeignAsset, getIsTransferCompleted, getOriginalAssetSui, getPackageId, redeemOnSui, transferFromSui } from './utils';
 
 /**
  * @category Sui
@@ -218,7 +211,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
     try {
       const { token_bridge } = this.contracts.mustGetContracts('sui');
       if (!token_bridge) throw new Error('token bridge contract not found');
-      const coinType = await getForeignAssetSui(
+      const coinType = await getForeignAsset(
         this.provider,
         token_bridge,
         this.context.toChainId('sui'),
@@ -249,7 +242,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
       const formattedAddr = await tokenContext.formatAssetAddress(
         tokenId.address,
       );
-      const coinType = await getForeignAssetSui(
+      const coinType = await getForeignAsset(
         this.provider,
         token_bridge,
         chainId,
@@ -384,7 +377,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
   ): Promise<boolean> {
     const { token_bridge } = this.contracts.mustGetContracts('sui');
     if (!token_bridge) throw new Error('token bridge contract not found');
-    return await getIsTransferCompletedSui(
+    return await getIsTransferCompleted(
       this.provider,
       token_bridge,
       arrayify(signedVaa),

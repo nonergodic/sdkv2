@@ -153,7 +153,7 @@ export function deserializeLayout<T extends readonly LayoutItem[]>(
   layout: T,
   encoded: Uint8Array,
   offset?: number,
-  consumeAll?: true,
+  consumeAll?: false,
 ): [LayoutToType<T>, number];
 
 export function deserializeLayout<T extends readonly LayoutItem[]>(
@@ -162,12 +162,14 @@ export function deserializeLayout<T extends readonly LayoutItem[]>(
   offset = 0,
   consumeAll = true,
 ): LayoutToType<T> | [LayoutToType<T>, number] {
-  let [decoded, newOffset] = deserializeArray(layout, encoded, offset);
+  let decoded = {} as any;
+  for (const item of layout)
+    [decoded[item.name], offset] = deserializeLayoutItem(item, encoded, offset);
 
-  if (consumeAll && newOffset !== encoded.length)
-    throw new Error(`encoded data is longer than expected: ${encoded.length} > ${newOffset}`);
+  if (consumeAll && offset !== encoded.length)
+    throw new Error(`encoded data is longer than expected: ${encoded.length} > ${offset}`);
   
-  return decoded as LayoutToType<T>;
+  return consumeAll ? decoded as LayoutToType<T> : [decoded as LayoutToType<T>, offset];
 }
 
 // -- IMPL --
@@ -318,18 +320,6 @@ function deserializeUint(
   return [(size > numberMaxSize) ? value : Number(value), updateOffset(encoded, offset, size)];
 }
 
-function deserializeArray (
-  elements: readonly LayoutItem[],
-  encoded: Uint8Array,
-  offset: number,
-): [LayoutToType<typeof elements>, number] {
-  let decoded = {} as any;
-  for (const element of elements)
-    [decoded[element.name], offset] = deserializeLayoutItem(element, encoded, offset);
-  
-  return [decoded, offset];
-}
-
 function deserializeLayoutItem(
   item: LayoutItem,
   encoded: Uint8Array,
@@ -337,16 +327,16 @@ function deserializeLayoutItem(
 ): [LayoutToType<typeof item>, number] {
   switch (item.binary) {
     case "array": {
-      let ret = [] as any[];
+      let ret = [] as LayoutToType<typeof item.elements>[];
       if (item.size !== undefined) {
         const [length, newOffset] = deserializeUint(encoded, offset, item.size) as [number, number];
         offset = newOffset;
         for (let i = 0; i < length; ++i)
-          [ret[i], offset] = deserializeArray(item.elements, encoded, offset);
+          [ret[i], offset] = deserializeLayout(item.elements, encoded, offset, false);
       }
       else {
         while (offset < encoded.length)
-          [ret[ret.length], offset] = deserializeArray(item.elements, encoded, offset);
+          [ret[ret.length], offset] = deserializeLayout(item.elements, encoded, offset, false);
       }
       return [ret, offset];
     }

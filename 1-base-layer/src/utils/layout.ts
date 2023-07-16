@@ -28,39 +28,6 @@ export type CustomConversion<FromType extends PrimitiveTypes, ToType> = {
   from: (val: ToType) => FromType,
 };
 
-// type WithOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-
-// type LayoutItemTemplate<
-//   BinaryLiteral extends BinaryLiterals,
-//   Size extends number
-// > = {
-//   name: string,
-//   binary: BinaryLiteral,
-//   size: Size,
-//   custom: BinaryLiteral extends "array"
-//     ? readonly LayoutItem[]
-//     : BinaryLiteral extends "uint"
-//     ? UintSizeToPrimitive<Size>
-//       | CustomConversion<UintSizeToPrimitive<Size>, any>
-//     : BinaryLiteral extends "bytes" ?
-//       Uint8Array | CustomConversion<Uint8Array, any>
-//     : never,
-// };
-
-// type LayoutItemOptionals<BinaryLiteral extends BinaryLiterals> =
-//   BinaryLiteral extends "uint"
-//   ? "custom"
-//   : BinaryLiteral extends "bytes"
-//   ? "size" | "custom"
-//   : BinaryLiteral extends "array"
-//   ? "size"
-//   : never;
-
-// type LayoutItemImpl<BinaryLiteral extends BinaryLiterals> =
-//   WithOptional<LayoutItemTemplate<BinaryLiteral, number>, LayoutItemOptionals<BinaryLiteral>>;
-
-// type LayoutItem = LayoutItemImpl<"uint"> | LayoutItemImpl<"bytes"> | LayoutItemImpl<"array">;
-
 interface LayoutItemBase<T extends BinaryLiterals> {
   name: string,
   binary: T,
@@ -84,13 +51,14 @@ export interface BigintLayoutItem extends LayoutItemBase<"uint"> {
 export interface BytesLayoutItem extends LayoutItemBase<"bytes"> {
   size?: number,
   custom?: Uint8Array | CustomConversion<Uint8Array, any>,
-  //TODO what about variable sized byte "arrays"?
+  //TODO do we need variable sized byte "arrays"?
 };
 
 export interface ArrayLayoutItem extends LayoutItemBase<"array"> {
   size?: NumberSize, 
   elements: readonly LayoutItem[],
-  //TODO allow custom conversion for arrays?
+  //custom conversion of arrays can be accomplished via bytes and CustomCoversion using a
+  //  separate layout
 };
 
 export type UintLayoutItem = NumberLayoutItem | BigintLayoutItem;
@@ -116,26 +84,88 @@ export type LayoutToType<T> =
   )
   : never;
 
+//couldn't find a way (and I suspect there isn't one) to determine whether a given type is a literal
+//  and hence also no way to filter an object type for keys that have a literal type, so we have to
+//  effectively duplicate our effort here
+export type FixedItems<T extends readonly LayoutItem[]> = 
+  T extends readonly (infer Item)[]
+  ? ( Item extends LayoutItem & { custom: unknown } 
+    ? ( Item["custom"] extends CustomConversion<any, any>
+      ? {}
+      : { [Name in Item["name"]]: Item["custom"] }
+      )
+    : {}
+    )
+  : {};
+
+export type DynamicItems<T extends readonly LayoutItem[]> =
+  Omit<LayoutToType<T>, keyof FixedItems<T>>;
+
+export const fixedItems = <const T extends readonly LayoutItem[]>(layout: T): FixedItems<T> =>
+  layout.reduce((acc: any, item: any) =>
+    item["custom"] !== undefined &&
+    item.custom["to"] !== undefined &&
+    item.custom["from"] !== undefined
+    ? acc
+    : {...acc, [item.name]: item.custom },
+    {} as any
+  );
+
+export const addFixed = <T extends readonly LayoutItem[]>(
+  layout: T,
+  dynamicValues: DynamicItems<T>,
+): LayoutToType<T> =>
+  ({...fixedItems(layout), ...dynamicValues}) as LayoutToType<T>;
+
 export function serializeLayout<T extends readonly LayoutItem[]>(
   layout: T,
   data: LayoutToType<T>,
-): Uint8Array {
-  const ret = new Uint8Array(calcLayoutSize(layout, data));
-  let offset = 0;
+): Uint8Array;
+
+export function serializeLayout<T extends readonly LayoutItem[]>(
+  layout: T,
+  data: LayoutToType<T>,
+  encoded: Uint8Array,
+  offset?: number,
+): number;
+
+export function serializeLayout<T extends readonly LayoutItem[]>(
+  layout: T,
+  data: LayoutToType<T>,
+  encoded?: Uint8Array,
+  offset = 0,
+): Uint8Array | number {
+  let ret = encoded ?? new Uint8Array(calcLayoutSize(layout, data));
   for (let i = 0; i < layout.length; ++i)
     offset = serializeLayoutItem(layout[i], data[i], ret, offset);
   
-  return ret;
+  return encoded === undefined ? ret : offset;
 }
 
 export function deserializeLayout<T extends readonly LayoutItem[]>(
   layout: T,
   encoded: Uint8Array,
-): LayoutToType<T> {
-  let [decoded, offset] = deserializeArray(layout, encoded, 0);
+  offset?: number,
+  consumeAll?: true,
+): LayoutToType<T>;
 
-  if (offset !== encoded.length)
-    throw new Error(`encoded data is longer than expected: ${encoded.length} > ${offset}`);
+export function deserializeLayout<T extends readonly LayoutItem[]>(
+  layout: T,
+  encoded: Uint8Array,
+  offset?: number,
+  consumeAll?: true,
+): [LayoutToType<T>, number];
+
+export function deserializeLayout<T extends readonly LayoutItem[]>(
+  layout: T,
+  encoded: Uint8Array,
+  offset = 0,
+  consumeAll = true,
+): LayoutToType<T> | [LayoutToType<T>, number] {
+  let [decoded, newOffset] = deserializeArray(layout, encoded, offset);
+
+  if (consumeAll && newOffset !== encoded.length)
+    throw new Error(`encoded data is longer than expected: ${encoded.length} > ${newOffset}`);
   
   return decoded as LayoutToType<T>;
 }
@@ -143,12 +173,12 @@ export function deserializeLayout<T extends readonly LayoutItem[]>(
 // -- IMPL --
 
 //Wormhole uses big endian by default for all uints
-const serializeUint = (
+function serializeUint(
   encoded: Uint8Array,
   offset: number,
   val: number | bigint,
   bytes: number,
-): number => {
+): number {
   if (val < 0 || (typeof val === "number" && !Number.isInteger(val)))
     throw new Error(`Value ${val} is not an unsigned integer`);
   
@@ -200,28 +230,29 @@ const checkUint8ArrayDeeplyEqual = (custom: Uint8Array, data: Uint8Array): void 
       );
 }
 
-const serializeLayoutItem = (
+function serializeLayoutItem(
   item: LayoutItem,
-  data: any,
+  data: LayoutToType<typeof item>,
   encoded: Uint8Array,
   offset: number
-): number => {
+): number {
   switch (item.binary) {
     case "array": {
+      const narrowedData = data as LayoutToType<typeof item>;
       if (item.size !== undefined)
-        offset = serializeUint(encoded, offset, data.length, item.size);
-        
-      for (let i = 0; i < item.elements.length; ++i)
-        offset = serializeLayoutItem(item.elements[i], data[i], encoded, offset);
+        offset = serializeUint(encoded, offset, narrowedData.length, item.size);
+      
+      for (let i = 0; i < narrowedData.length; ++i)
+        offset = serializeLayout(item.elements, narrowedData[i], encoded, offset);
       
       break;
     }
     case "bytes": {
-      const value = (() => {
+      const value = ((): LayoutToType<typeof item> => {
         if (item.custom !== undefined) {
           if (item.custom instanceof Uint8Array) {
             //fixed value
-            checkUint8ArrayDeeplyEqual(item.custom, data)
+            checkUint8ArrayDeeplyEqual(item.custom, data as LayoutToType<typeof item>)
             return item.custom;
           }
           //custom conversion
@@ -232,11 +263,11 @@ const serializeLayoutItem = (
           return converted;
         }
         //primitive type
-        return data as Uint8Array;
+        return data as LayoutToType<typeof item>;
       })();
 
       encoded.set(value, offset);
-      offset += data.length;
+      offset += value.length;
       break;
     }
     case "uint": {
@@ -244,14 +275,14 @@ const serializeLayoutItem = (
         if (item.custom !== undefined) {
           if (typeof item.custom == "number" || typeof item.custom === "bigint") {
             //fixed value
-            checkUintEquals(item.custom, data);
+            checkUintEquals(item.custom, data as LayoutToType<typeof item>);
             return item.custom;
           }
           //custom conversion
           return item.custom.from(data);
         }
         //primitive type
-        return data as number | bigint;
+        return data as UintSizeToPrimitive<typeof item.size>;
       })();
 
       offset = serializeUint(encoded, offset, value, item.size);
@@ -263,11 +294,11 @@ const serializeLayoutItem = (
 
 // deserialize
 
-const updateOffset = (
+function updateOffset (
   encoded: Uint8Array,
   offset: number,
   size: number
-): number => {
+): number {
   const newOffset = offset + size;
   if (newOffset > encoded.length)
     throw new Error(`encoded data is shorter than expected: ${encoded.length} < ${newOffset}`);
@@ -275,11 +306,11 @@ const updateOffset = (
   return newOffset;
 }
 
-const deserializeUint = (
+function deserializeUint(
   encoded: Uint8Array,
   offset: number,
   size: number
-): [number | bigint, number] => {
+): [number | bigint, number] {
   let value = 0n;
   for (let i = 0; i < size; ++i)
     value += BigInt(encoded[offset + i]) << BigInt((size - 1 - i) * 8);
@@ -287,11 +318,11 @@ const deserializeUint = (
   return [(size > numberMaxSize) ? value : Number(value), updateOffset(encoded, offset, size)];
 }
 
-const deserializeArray = (
+function deserializeArray (
   elements: readonly LayoutItem[],
   encoded: Uint8Array,
   offset: number,
-): [any, number] => {
+): [LayoutToType<typeof elements>, number] {
   let decoded = {} as any;
   for (const element of elements)
     [decoded[element.name], offset] = deserializeLayoutItem(element, encoded, offset);
@@ -299,11 +330,11 @@ const deserializeArray = (
   return [decoded, offset];
 }
 
-const deserializeLayoutItem = (
+function deserializeLayoutItem(
   item: LayoutItem,
   encoded: Uint8Array,
   offset: number,
-): [any, number] => {
+): [LayoutToType<typeof item>, number] {
   switch (item.binary) {
     case "array": {
       let ret = [] as any[];

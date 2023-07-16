@@ -28,6 +28,14 @@ export interface Address {
   //static byteSize(): number;
 }
 
+//TODO should address be a UniveralAddress?
+//     Or should this be generic with C extends Chain, with
+//       address = NativeAddressType<C> | UniversalAddress ?
+export interface ChainAddressPair {
+  readonly chain: Chain;
+  readonly address: Address;
+}
+
 declare global { namespace Wormhole {
   export interface PlatformToNativeAddressMapping {}
 }}

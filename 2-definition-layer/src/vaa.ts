@@ -1,4 +1,4 @@
-//@noble/hashes is what ethers uses under the hood
+//@noble is what ethers uses under the hood
 import { keccak_256 } from "@noble/hashes/sha3";
 import { Signature as SignatureOptionalRecovery } from "@noble/secp256k1";
 
@@ -67,9 +67,9 @@ const guardianSignatureLayout = [
 ] as const satisfies readonly LayoutItem[];
 
 const headerLayout = [
-  { name: "version",     binary: "uint",  size: 1, custom: 1 },
-  { name: "guardianSet", binary: "uint",  size: 4 },
-  { name: "signatures",  binary: "array", size: 1, elements: guardianSignatureLayout },
+  { name: "version",          binary: "uint",  size:  1, custom: 1 },
+  { name: "guardianSet",      binary: "uint",  size:  4 },
+  { name: "signatures",       binary: "array", size:  1, elements: guardianSignatureLayout },
 ] as const satisfies readonly LayoutItem[];
 
 const bodyLayout = [
@@ -144,21 +144,15 @@ export function deserialize<PayloadLiteral extends PayloadLiterals>(
   if (typeof data === "string")
     data = hexByteStringToUint8Array(data);
   
-  const header = deserializeLayout(
-    [...headerLayout, { name: "rawBody", binary: "bytes" }] as const,
-    data,
-  );
-  const body = deserializeLayout(
-    [...bodyLayout, { name: "rawPayload", binary: "bytes" }] as const,
-    header.rawBody,
-  );
-  const payload = getSerDe(payloadLiteral).deserialize(body.rawPayload);
-  const hash = keccak_256(header.rawBody);
+  const [header, bodyOffset] = deserializeLayout(headerLayout, data, 0, false);
+  const [body, payloadOffset] = deserializeLayout(bodyLayout, data, bodyOffset, false);
+  const payload = getSerDe(payloadLiteral).deserialize(data.slice(payloadOffset));
+  const hash = keccak_256(data.slice(bodyOffset));
 
   return { payloadLiteral, ...header, ...body, payload, hash };
 }
 
 payloadFactory.set("Uint8Array", {
   serialize: (payload: Uint8Array) => payload,
-  deserialize: (payload: Uint8Array) => payload
+  deserialize: (payload: Uint8Array) => payload,
 });

@@ -37,6 +37,12 @@ interface LayoutItemBase<T extends BinaryLiterals> {
 //For all types except arrays, size specifies the number of bytes of the type itself
 //For arrays, size specifies the number of bytes used to encode the number of elements in the array.
 //  Hence, a size of 1 for an array means that it contain at most 255 elements
+//For bytes, if the size is omitted, can mean one of two things:
+// 1. if a fixed Uint8Array value is given, it will take the length of that value
+// 2. otherwise it's interpreted as "rest of the binary data" (which means it must be the last item
+//      of the layout)
+//TODO implement check for fixed value bytes that enforces that length of the fixed value equals
+//       size (if size is specified)
 
 export interface NumberLayoutItem extends LayoutItemBase<"uint"> {
   size: NumberSize,
@@ -172,6 +178,43 @@ export function deserializeLayout<T extends readonly LayoutItem[]>(
   return consumeAll ? decoded as LayoutToType<T> : [decoded as LayoutToType<T>, offset];
 }
 
+export const calcLayoutSize = (
+  layout: readonly LayoutItem[],
+  data: LayoutToType<typeof layout>
+): number =>
+  layout.reduce((acc: number, item: LayoutItem) => {
+    switch (item.binary) {
+      case "array": {
+        if (item.size !== undefined)
+          acc += item.size;
+
+        const narrowedData = data[item.name] as LayoutToType<typeof item>;
+        for (let i = 0; i < narrowedData.length; ++i)
+          acc += calcLayoutSize(item.elements, narrowedData[i]);
+
+        return acc;
+      }
+      case "bytes": {
+        if (item.size !== undefined)
+          return acc + item.size;
+
+        if (item.custom !== undefined) {
+          if (item.custom instanceof Uint8Array)
+            return acc + item.custom.length;
+
+          return acc + item.custom.from(data[item.name]).length;
+        }
+
+        return (data[item.name] as LayoutToType<typeof item>).length;
+      }
+      case "uint": {
+        return acc + item.size;
+      }
+    }
+  },
+  0
+  );
+
 // -- IMPL --
 
 //Wormhole uses big endian by default for all uints
@@ -196,17 +239,6 @@ function serializeUint(
   
   return offset + bytes;
 }
-
-const calcLayoutSize = (layout: readonly LayoutItem[], data: any): number =>
-  layout.reduce(
-    (acc: number, item: LayoutItem) =>
-      item.binary === "array"
-      ? acc + (item.size ?? 0) + calcLayoutSize(item.elements, data[item.name]) 
-      : item.size !== undefined
-      ? acc + item.size
-      : acc + data[item.name].length,
-    0
-  );
 
 const checkUint8ArraySize = (custom: Uint8Array, size: number): void => {
   if (custom.length !== size)
@@ -240,6 +272,7 @@ function serializeLayoutItem(
 ): number {
   switch (item.binary) {
     case "array": {
+      //Typescript does not infer the narrowed type of data automatically and retroactively
       const narrowedData = data as LayoutToType<typeof item>;
       if (item.size !== undefined)
         offset = serializeUint(encoded, offset, narrowedData.length, item.size);
@@ -250,22 +283,18 @@ function serializeLayoutItem(
       break;
     }
     case "bytes": {
-      const value = ((): LayoutToType<typeof item> => {
-        if (item.custom !== undefined) {
-          if (item.custom instanceof Uint8Array) {
-            //fixed value
-            checkUint8ArrayDeeplyEqual(item.custom, data as LayoutToType<typeof item>)
-            return item.custom;
-          }
-          //custom conversion
-          const converted = item.custom.from(data);
-          if (item.size !== undefined)
-            checkUint8ArraySize(converted, item.size);
-          
-          return converted;
+      const narrowedData = data as LayoutToType<typeof item>;
+      const value = (() => {
+        if (item.custom !== undefined && item.custom instanceof Uint8Array) {
+          checkUint8ArrayDeeplyEqual(item.custom, narrowedData)
+          return narrowedData;
         }
-        //primitive type
-        return data as LayoutToType<typeof item>;
+
+        const ret = item.custom !== undefined ? item.custom.from(narrowedData) : narrowedData;
+        if (item.size !== undefined)
+          checkUint8ArraySize(ret, item.size);
+          
+        return ret;
       })();
 
       encoded.set(value, offset);
@@ -273,18 +302,16 @@ function serializeLayoutItem(
       break;
     }
     case "uint": {
+      const narrowedData = data as LayoutToType<typeof item>;
       const value = (() => {
-        if (item.custom !== undefined) {
-          if (typeof item.custom == "number" || typeof item.custom === "bigint") {
-            //fixed value
-            checkUintEquals(item.custom, data as LayoutToType<typeof item>);
-            return item.custom;
-          }
-          //custom conversion
-          return item.custom.from(data);
+        if ( item.custom !== undefined &&
+             (typeof item.custom == "number" || typeof item.custom === "bigint")
+          ) {
+          checkUintEquals(item.custom, narrowedData);
+          return narrowedData;
         }
-        //primitive type
-        return data as UintSizeToPrimitive<typeof item.size>;
+
+        return item.custom !== undefined ? item.custom.from(narrowedData) : narrowedData;
       })();
 
       offset = serializeUint(encoded, offset, value, item.size);
@@ -343,37 +370,31 @@ function deserializeLayoutItem(
     case "bytes": {
       let newOffset;
       if (item.size !== undefined)
-        newOffset = updateOffset(encoded, offset, item.size)
+        newOffset = updateOffset(encoded, offset, item.size);
+      else if (item.custom !== undefined && item.custom instanceof Uint8Array)
+        newOffset = offset + item.custom.length;
       else
-        newOffset = encoded.length
-      
+        newOffset = encoded.length;
+
       const value = encoded.slice(offset, newOffset);
-      if (item.custom !== undefined) {
-        if (item.custom instanceof Uint8Array) {
-          //fixed value
-          checkUint8ArrayDeeplyEqual(item.custom, value);
-          return [value, newOffset];
-        }
-        //custom conversion
-        return [item.custom.from(value), newOffset];
+      if (item.custom !== undefined && item.custom instanceof Uint8Array) {
+        checkUint8ArrayDeeplyEqual(item.custom, value);
+        return [value, newOffset];
       }
-      //primitive type
-      return [value, newOffset];
+
+      return [item.custom !== undefined ? item.custom.from(value) : value, newOffset];
     }
     case "uint": {
       const [value, newOffset] = deserializeUint(encoded, offset, item.size);
-      if (item.custom !== undefined) {
-        if (typeof item.custom === "number" || typeof item.custom === "bigint") {
-          //fixed value
-          checkUintEquals(item.custom, value);
-          
-          return [value, newOffset];
-        }
-        //custom conversion
-        return [item.custom.from(value), newOffset];
+      if ( item.custom !== undefined &&
+           (typeof item.custom === "number" || typeof item.custom === "bigint")
+       ) {
+        checkUintEquals(item.custom, value);
+
+        return [value, newOffset];
       }
-      //primitive type
-      return [value, newOffset];
+
+      return [item.custom !== undefined ? item.custom.from(value) : value, newOffset];
     }
   }
 }

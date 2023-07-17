@@ -3,8 +3,10 @@ import { keccak_256 } from "@noble/hashes/sha3";
 import { Signature as SignatureOptionalRecovery } from "@noble/secp256k1";
 
 import {
-  ChainId,
+  Chain,
   isChainId,
+  chainToChainIdMapping,
+  chainIdToChainMapping,
   hexByteStringToUint8Array,
   LayoutItem,
   LayoutToType,
@@ -43,14 +45,14 @@ export const conversions = {
     to: (val: Uint8Array): UniversalAddress => new UniversalAddress(val),
     from: (val: UniversalAddress): Uint8Array => val.toUint8Array(),
   } satisfies CustomConversion<Uint8Array, UniversalAddress>,
-  ChainId: {
-    to: (val: number): ChainId => {
+  Chain: {
+    to: (val: number): Chain => {
       if (!isChainId(val))
         throw new Error(`Invalid chain id ${val}`);
-      return val;
+      return chainIdToChainMapping[val];
     },
-    from: (val: ChainId): number => val,
-  } satisfies CustomConversion<number, ChainId>,
+    from: (val: Chain): number => chainToChainIdMapping[val],
+  } satisfies CustomConversion<number, Chain>,
   Signature: {
     to: (val: Uint8Array): Signature => {
       const sig = deserializeLayout(signatureLayout, val);
@@ -75,7 +77,7 @@ const headerLayout = [
 const bodyLayout = [
   { name: "timestamp",        binary: "uint",  size:  4 },
   { name: "nonce",            binary: "uint",  size:  4 },
-  { name: "emitterChain",     binary: "uint",  size:  2, custom: conversions.ChainId },
+  { name: "emitterChain",     binary: "uint",  size:  2, custom: conversions.Chain },
   { name: "emitterAddress",   binary: "bytes", size: 32, custom: conversions.UniversalAddress },
   { name: "sequence",         binary: "uint",  size:  8 },
   { name: "consistencyLevel", binary: "uint",  size:  1 }
@@ -145,6 +147,9 @@ export function deserialize<PayloadLiteral extends PayloadLiterals>(
     data = hexByteStringToUint8Array(data);
   
   const [header, bodyOffset] = deserializeLayout(headerLayout, data, 0, false);
+  if (new Set(header.signatures.map(s => s.guardianSetIndex)).size !== header.signatures.length)
+    throw new Error("Duplicate guardian set index in signatures");
+
   const [body, payloadOffset] = deserializeLayout(bodyLayout, data, bodyOffset, false);
   const payload = getSerDe(payloadLiteral).deserialize(data.slice(payloadOffset));
   const hash = keccak_256(data.slice(bodyOffset));

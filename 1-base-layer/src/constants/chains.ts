@@ -4,7 +4,7 @@ import { reverseMapping } from "../utils/mapping";
 //  others because it has no other types associated with it (such as a platform). Including this
 //  null value would make all the other mappings a lot more messy, or would force us to introduce
 //  two types of each mapping (one with Unset and one without).
-export const ChainToChainIdMapping = {
+export const chainToChainIdMapping = {
   //Unset: 0
   Solana: 1,
   Ethereum: 2,
@@ -41,21 +41,18 @@ export const ChainToChainIdMapping = {
   Sepolia: 10002,
 } as const;
 
-export const ChainIdToChainMapping = reverseMapping(ChainToChainIdMapping);
+export const chainIdToChainMapping = reverseMapping(chainToChainIdMapping);
 
-export type ChainToChainId = typeof ChainToChainIdMapping;
-export type ChainIdToChain = typeof ChainIdToChainMapping;
+export type ChainToChainId = typeof chainToChainIdMapping;
+export type ChainIdToChain = typeof chainIdToChainMapping;
 
-export type Chain = keyof typeof ChainToChainIdMapping;
-export type ChainId = keyof typeof ChainIdToChainMapping;
-export const chains = Object.keys(ChainToChainIdMapping) as Chain[];
-export const chainIds = Object.values(ChainToChainIdMapping);
+export type Chain = keyof typeof chainToChainIdMapping;
+export type ChainId = keyof typeof chainIdToChainMapping;
+export const chains = Object.keys(chainToChainIdMapping) as Chain[];
+export const chainIds = Object.values(chainToChainIdMapping);
 
 export const isChain = (chain: string): chain is Chain =>
-  chain in ChainToChainIdMapping;
-
-export const toChainId = (chain: Chain): ChainId =>
-  ChainToChainIdMapping[chain];
+  chain in chainToChainIdMapping;
 
 export const isChainId = (chainId: number): chainId is ChainId =>
-  chainId in ChainIdToChainMapping;
+  chainId in chainIdToChainMapping;

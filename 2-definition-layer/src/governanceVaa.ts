@@ -3,7 +3,6 @@ import {
   isModule,
   Module,
   CustomConversion,
-  LayoutItem,
 } from "wormhole-base";
 
 import { conversions } from "./vaa";
@@ -67,7 +66,7 @@ type ActionNum<M extends Module> = keyof typeof actions[M];
 const isActionNum = (module: Module, actionNum: number): actionNum is ActionNum<typeof module> =>
   actionNum in actions[module];
 
-export type ActionName<M extends Module> =
+type ActionName<M extends Module> =
   typeof actions[M][ActionNum<M>] extends { name: infer S } ? S : never;
 
 const actionConversion = <const M extends Module>(module: M) => ({
@@ -89,23 +88,47 @@ const actionConversion = <const M extends Module>(module: M) => ({
   }
 }) as const satisfies CustomConversion<number, ActionName<M>>;
 
-const chainOrNullConversion = {
-  to: (chainId: number) => {
-    if (chainId == 0)
-      return null;
-    
+type ChainOptional<T extends boolean> = T extends true ? Chain | null : Chain;
+
+const chainConversion = <T extends boolean>(allowNull: T) => ({
+  to: (chainId: number): ChainOptional<T> => {
+    if (chainId === 0) {
+      if (!allowNull)
+        throw new Error("ChainId 0 is not valid for this module and action");
+      
+      return null as ChainOptional<T>;
+    }
+
     return conversions.Chain.to(chainId);
   },
-  from: (chain: Chain | null) => {
+  from: (chain: ChainOptional<T>): number => {
     if (chain === null)
       return 0;
     
     return conversions.Chain.from(chain);
   }
-} as const;
+}) as const;
 
-export const governanceVaaHeaderLayout = <const M extends Module>(module: M) => [
-  { name: "module", binary: "bytes", size: moduleBytesSize, custom: moduleConversion         },
-  { name: "action", binary: "uint",  size: 1,               custom: actionConversion(module) },
-  { name: "chain",  binary: "uint",  size: 2,               custom: chainOrNullConversion    },
-] as const satisfies readonly LayoutItem[];
+export const governanceVaaHeaderLayout = <
+  const M extends Module,
+  const A extends keyof typeof actions[M]
+>(module: M, action: A) => [
+  { 
+    name: "module",
+    binary: "bytes",
+    size: moduleBytesSize,
+    custom: moduleConversion
+  },
+  { 
+    name: "action",
+    binary: "uint",
+    size: 1,
+    custom: actionConversion(module)
+  },
+  { 
+    name: "chain",
+    binary: "uint", 
+    size: 2,
+    custom: chainConversion((actions[module][action] as {allowUnset: boolean}).allowUnset)
+  },
+] as const;

@@ -1,0 +1,38 @@
+{
+  "private": true,
+  "name": "@wormhole-foundation/sdk-base",
+  "repository": "https://github.com/nonergodic/sdkv2",
+  "license": "Apache-2.0",
+  "version": "0.1.0-beta",
+  "main": "bin/index.js",
+  "author": "",
+  "description": "",
+  "engines": {
+    "node": ">=16",
+    "pnpm": ">=7"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^5.54.1",
+    "@typescript-eslint/parser": "^5.54.1",
+    "eslint": "^8.35.0",
+    "eslint-config-prettier": "^8.7.0",
+    "lint-staged": "^13.1.2",
+    "prettier": "2.8.4",
+    "typescript": "^4.4.2"
+  },
+  "scripts": {
+    "build": "tsc --build",
+    "clean": "pnpm -r run clean",
+    "lint": "npm run prettier && eslint --fix",
+    "prettier": "prettier --write ./src"
+  },
+  "dependencies": {
+    "@ethersproject/providers": "^5.7.2",
+    "@nomad-xyz/multi-provider": "^1.1.0",
+    "binary-parser": "^2.2.1",
+    "elliptic": "^6.5.4",
+    "ethers": "^5.7.2"
+  }
+}

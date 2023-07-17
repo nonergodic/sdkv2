@@ -9,6 +9,23 @@
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
     "ts-mocha": "^10.0.0",
+    "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
-  }
+  },
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "workspaces": [
+    "1-base-layer",
+    "2-definition-layer",
+    "3-platform-layer/*",
+    "4-xdapp-layer/*",
+    "packages/4-xdapp-layer/base",
+    "packages/4-xdapp-layer/evm",
+    "packages/4-xdapp-layer/solana",
+    "packages/4-xdapp-layer/aptos",
+    "packages/4-xdapp-layer/sui",
+    "packages/4-xdapp-layer/sei",
+    "packages/4-xdapp-layer/sdk"
+  ]
 }

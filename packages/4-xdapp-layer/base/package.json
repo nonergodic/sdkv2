@@ -27,7 +27,9 @@
     "build": "tsc --build",
     "clean": "pnpm -r run clean",
     "lint": "npm run prettier && eslint --fix",
-    "prettier": "prettier --write ./src"
+    "prettier": "prettier --write ./src",
+    "test": "jest",
+    "coverage": "jest --coverage"
   },
   "dependencies": {
     "@ethersproject/providers": "^5.7.2",

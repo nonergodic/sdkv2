@@ -1,5 +1,5 @@
 import { BigNumber } from 'ethers';
-import { ParsedVaa, SignedVaa } from './vaa';
+import { ParsedVaa, SignedVaa } from './utils/vaa';
 import { MainnetChainId, MainnetChainName } from './config/MAINNET';
 import { TestnetChainId, TestnetChainName } from './config/TESTNET';
 import { RelayerAbstract } from './abstracts/relayer';

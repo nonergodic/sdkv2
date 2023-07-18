@@ -20,7 +20,7 @@ import {
   TokenId,
   WormholeConfig,
 } from './types';
-import { ParsedVaa, parseVaa } from './vaa';
+import { ParsedVaa, parseVaa } from './utils/vaa';
 
 /**
  * The WormholeContext manages connections to Wormhole Core, Bridge and NFT Bridge contracts.

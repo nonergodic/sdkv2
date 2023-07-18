@@ -14,27 +14,27 @@ import { AptosClient } from 'aptos';
  */
 export class AptosContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly context: Wormhole;
+  readonly wormhole: Wormhole;
   readonly client: AptosClient;
 
-  constructor(context: Wormhole, client: AptosClient) {
+  constructor(wormholeBase: Wormhole, client: AptosClient) {
     super();
-    this.context = context;
+    this.wormhole = wormholeBase;
     this.client = client;
     this._contracts = new Map();
-    const chains = filterByContext(context.conf, Context.APTOS);
+    const chains = filterByContext(wormholeBase.conf, Context.APTOS);
     chains.forEach((c) => {
       this._contracts.set(c.key, c.contracts);
     });
   }
 
   getContracts(chain: ChainName | ChainId): Contracts | undefined {
-    const chainName = this.context.toChainName(chain);
+    const chainName = this.wormhole.toChainName(chain);
     return this._contracts.get(chainName);
   }
 
   mustGetContracts(chain: ChainName | ChainId): Contracts {
-    const chainName = this.context.toChainName(chain);
+    const chainName = this.wormhole.toChainName(chain);
     const contracts = this._contracts.get(chainName);
     if (!contracts) throw new Error(`no Aptos contracts found for ${chain}`);
     return contracts;

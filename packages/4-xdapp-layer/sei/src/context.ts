@@ -41,6 +41,7 @@ import {
   parseTokenTransferPayload,
   parseVaa,
   NATIVE,
+  Network,
   SeiAbstract,
 } from '@wormhole-foundation/sdk-base';
 import { SeiContracts } from './contracts';
@@ -139,11 +140,11 @@ const buildExecuteMsg = (
  * @category Sei
  */
 export class SeiContext
-  implements TokenBridgeAbstract<SeiTransaction>, SeiAbstract
+  extends TokenBridgeAbstract<SeiTransaction> implements SeiAbstract
 {
   readonly type = Context.SEI;
   readonly contracts: SeiContracts;
-  readonly context: Wormhole;
+  protected wormhole: Wormhole;
 
   private wasmClient?: CosmWasmClient;
 
@@ -151,9 +152,10 @@ export class SeiContext
   private readonly CHAIN = 'sei';
   private readonly REDEEM_EVENT_DEFAULT_MAX_BLOCKS = 2000;
 
-  constructor(context: Wormhole) {
-    this.context = context;
-    this.contracts = new SeiContracts(context);
+  constructor(network: Network, wormholeInstance?: Wormhole) {
+    super();
+    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    this.contracts = new SeiContracts(this.wormhole);
   }
 
   async startTransfer(
@@ -167,13 +169,13 @@ export class SeiContext
   ): Promise<SeiTransaction> {
     if (token === NATIVE) throw new Error('Native token not supported');
 
-    const destContext = this.context.getContext(recipientChain);
-    const targetChain = this.context.toChainId(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
+    const targetChain = this.wormhole.toChainId(recipientChain);
 
     let recipientAccount = recipientAddress;
     // get token account for solana
     if (targetChain === MAINNET_CHAINS.solana) {
-      recipientAccount = await this.context.getSolanaRecipientAddress(
+      recipientAccount = await this.wormhole.getSolanaRecipientAddress(
         recipientChain,
         token as TokenId,
         recipientAddress,
@@ -238,10 +240,10 @@ export class SeiContext
    * @returns Whether there exists a native denomination created by the translator contract for the given token
    */
   async isTranslatedToken(tokenAddress: string): Promise<boolean> {
-    if (!this.context.conf.rest.sei) throw new Error('Sei rest not configured');
+    if (!this.wormhole.conf.rest.sei) throw new Error('Sei rest not configured');
     const resp = await axios.get(
       `${new URL(
-        this.context.conf.rest.sei,
+        this.wormhole.conf.rest.sei,
       )}sei-protocol/seichain/tokenfactory/denoms_from_creator/${this.getTranslatorAddress()}`,
     );
     const denoms: string[] = resp.data.denoms || [];
@@ -569,8 +571,8 @@ export class SeiContext
     tokenId: TokenId,
     chain: ChainName | ChainId,
   ): Promise<string | null> {
-    const toChainId = this.context.toChainId(chain);
-    const chainId = this.context.toChainId(tokenId.chain);
+    const toChainId = this.wormhole.toChainId(chain);
+    const chainId = this.wormhole.toChainId(tokenId.chain);
     if (toChainId === chainId) return tokenId.address;
 
     const wasmClient = await this.getCosmWasmClient();
@@ -578,7 +580,7 @@ export class SeiContext
       await this.contracts.mustGetContracts(this.CHAIN);
     if (!tokenBridgeAddress) throw new Error('Token bridge contract not found');
 
-    const sourceContext = this.context.getContext(tokenId.chain);
+    const sourceContext = this.wormhole.getContext(tokenId.chain);
     const tokenAddr = await sourceContext.formatAssetAddress(tokenId.address);
     const base64Addr = Buffer.from(tokenAddr).toString('base64');
 
@@ -658,13 +660,13 @@ export class SeiContext
       Buffer.from(tokenTransferPayload, 'hex'),
     );
 
-    const destContext = this.context.getContext(parsed.toChain as ChainId);
-    const tokenContext = this.context.getContext(parsed.tokenChain as ChainId);
+    const destContext = this.wormhole.getContext(parsed.toChain as ChainId);
+    const tokenContext = this.wormhole.getContext(parsed.tokenChain as ChainId);
 
     const tokenAddress = await tokenContext.parseAssetAddress(
       hexlify(parsed.tokenAddress),
     );
-    const tokenChain = this.context.toChainName(parsed.tokenChain);
+    const tokenChain = this.wormhole.toChainName(parsed.tokenChain);
 
     return [
       {
@@ -673,8 +675,8 @@ export class SeiContext
         amount: BigNumber.from(parsed.amount),
         payloadID: parsed.payloadType,
         recipient: destContext.parseAddress(hexlify(parsed.to)),
-        toChain: this.context.toChainName(parsed.toChain),
-        fromChain: this.context.toChainName(chain),
+        toChain: this.wormhole.toChainName(parsed.toChain),
+        fromChain: this.wormhole.toChainName(chain),
         tokenAddress,
         tokenChain,
         tokenId: {
@@ -898,10 +900,10 @@ export class SeiContext
 
   private async getCosmWasmClient(): Promise<CosmWasmClient> {
     if (!this.wasmClient) {
-      if (!this.context.conf.rpcs.sei)
+      if (!this.wormhole.conf.rpcs.sei)
         throw new Error('Sei RPC not configured');
       this.wasmClient = await CosmWasmClient.connect(
-        this.context.conf.rpcs.sei,
+        this.wormhole.conf.rpcs.sei,
       );
     }
     return this.wasmClient;

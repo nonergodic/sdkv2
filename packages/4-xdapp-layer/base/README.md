@@ -13,11 +13,12 @@ import { Wormhole, Context, Network } from '@wormhole-foundation/sdk-base';
 import { EvmContext } from '@wormhole-foundation/sdk-evm';
 import { SolanaContext } from '@wormhole-foundation/sdk-solana';
 
+const NETWORK = Network.MAINNET;
 const contexts = {
-  [Context.EVM]: EvmContext,
-  [Context.Solana]: SolanaContext,
+  [Context.EVM]: new EvmContext(NETWORK),
+  [Context.Solana]: new SolanaContext(NETWORK),
 }
-const wormholeSDK = new Wormhole(Network.MAINNET, contexts);
+const wormholeSDK = new Wormhole(NETWORK, contexts);
 const receipt = wormholeSDK.startTransfer(
   {
     chain: 'ethereum',

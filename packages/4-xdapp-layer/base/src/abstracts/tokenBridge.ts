@@ -23,7 +23,11 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    * A standard set of methods for accessing interfaces for Wormhole contracts on a given chain
    */
   abstract contracts: AnyContracts;
-  abstract context: Wormhole;
+  protected abstract wormhole: Wormhole;
+
+  setWormholeInstance(wormholeInstance: Wormhole) {
+    this.wormhole = wormholeInstance;
+  }
 
   /**
    * Send a Token Bridge transfer

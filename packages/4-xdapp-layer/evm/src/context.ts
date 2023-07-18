@@ -28,6 +28,7 @@ import {
   RelayerAbstract,
   createNonce,
   MAINNET_CHAINS,
+  Network,
 } from '@wormhole-foundation/sdk-base';
 import { EvmContracts } from './contracts';
 
@@ -39,25 +40,25 @@ export * from './contracts';
 export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
   readonly type = Context.EVM;
   readonly contracts: EvmContracts;
-  readonly context: Wormhole;
+  protected wormhole: Wormhole;
 
-  constructor(context: Wormhole) {
+  constructor(network: Network, wormholeInstance?: Wormhole) {
     super();
-    this.context = context;
-    this.contracts = new EvmContracts(context);
+    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    this.contracts = new EvmContracts(this.wormhole);
   }
 
   async getForeignAsset(
     tokenId: TokenId,
     chain: ChainName | ChainId,
   ): Promise<string | null> {
-    const toChainId = this.context.toChainId(chain);
-    const chainId = this.context.toChainId(tokenId.chain);
+    const toChainId = this.wormhole.toChainId(chain);
+    const chainId = this.wormhole.toChainId(tokenId.chain);
     // if the token is already native, return the token address
     if (toChainId === chainId) return tokenId.address;
     // else fetch the representation
     const tokenBridge = this.contracts.mustGetBridge(chain);
-    const sourceContext = this.context.getContext(tokenId.chain);
+    const sourceContext = this.wormhole.getContext(tokenId.chain);
     const tokenAddr = await sourceContext.formatAssetAddress(tokenId.address);
     const foreignAddr = await tokenBridge.wrappedAsset(
       chainId,
@@ -87,7 +88,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     tokenAddr: string,
     chain: ChainName | ChainId,
   ): Promise<number> {
-    const provider = this.context.mustGetProvider(chain);
+    const provider = this.wormhole.mustGetProvider(chain);
     const tokenContract = TokenImplementation__factory.connect(
       tokenAddr,
       provider,
@@ -100,7 +101,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     walletAddr: string,
     chain: ChainName | ChainId,
   ): Promise<BigNumber> {
-    const provider = this.context.mustGetProvider(chain);
+    const provider = this.wormhole.mustGetProvider(chain);
     return await provider.getBalance(walletAddr);
   }
 
@@ -111,7 +112,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
   ): Promise<BigNumber | null> {
     const address = await this.getForeignAsset(tokenId, chain);
     if (!address) return null;
-    const provider = this.context.mustGetProvider(chain);
+    const provider = this.wormhole.mustGetProvider(chain);
     const token = TokenImplementation__factory.connect(address, provider);
     const balance = await token.balanceOf(walletAddr);
     return balance;
@@ -134,7 +135,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     amount?: BigNumberish,
     overrides: PayableOverrides & { from?: string | Promise<string> } = {},
   ): Promise<ethers.ContractReceipt | void> {
-    const signer = this.context.getSigner(chain);
+    const signer = this.wormhole.getSigner(chain);
     if (!signer) throw new Error(`No signer for ${chain}`);
     const senderAddress = await signer.getAddress();
     const tokenImplementation = TokenImplementation__factory.connect(
@@ -183,9 +184,9 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     relayerFee: ethers.BigNumberish = 0,
     overrides: PayableOverrides & { from?: string | Promise<string> } = {},
   ): Promise<ethers.PopulatedTransaction> {
-    const destContext = this.context.getContext(recipientChain);
-    const recipientChainId = this.context.toChainId(recipientChain);
-    const sendingChainName = this.context.toChainName(sendingChain);
+    const destContext = this.wormhole.getContext(recipientChain);
+    const recipientChainId = this.wormhole.toChainId(recipientChain);
+    const sendingChainName = this.wormhole.toChainName(sendingChain);
     const amountBN = ethers.BigNumber.from(amount);
     const bridge = this.contracts.mustGetBridge(sendingChain);
 
@@ -199,7 +200,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
           chain: sendingChainName,
         };
       }
-      recipientAccount = await this.context.getSolanaRecipientAddress(
+      recipientAccount = await this.wormhole.getSolanaRecipientAddress(
         recipientChain,
         tokenId as TokenId,
         recipientAddress,
@@ -268,7 +269,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     relayerFee: ethers.BigNumberish = 0,
     overrides: PayableOverrides & { from?: string | Promise<string> } = {},
   ): Promise<ethers.ContractReceipt> {
-    const signer = this.context.getSigner(sendingChain);
+    const signer = this.wormhole.getSigner(sendingChain);
     if (!signer) throw new Error(`No signer for ${sendingChain}`);
 
     // approve for ERC-20 token transfers
@@ -326,8 +327,8 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     payload: Uint8Array,
     overrides: PayableOverrides & { from?: string | Promise<string> } = {},
   ): Promise<ethers.ContractReceipt> {
-    const destContext = this.context.getContext(recipientChain);
-    const recipientChainId = this.context.toChainId(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
+    const recipientChainId = this.wormhole.toChainId(recipientChain);
     const bridge = this.contracts.mustGetBridge(sendingChain);
     const amountBN = ethers.BigNumber.from(amount);
 
@@ -384,8 +385,8 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     recipientAddress: string,
     overrides: PayableOverrides & { from?: string | Promise<string> } = {},
   ): Promise<ethers.PopulatedTransaction> {
-    const destContext = this.context.getContext(recipientChain);
-    const recipientChainId = this.context.toChainId(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
+    const recipientChainId = this.wormhole.toChainId(recipientChain);
     const amountBN = ethers.BigNumber.from(amount);
     const relayer = this.contracts.mustGetTokenBridgeRelayer(sendingChain);
     const nativeTokenBN = ethers.BigNumber.from(toNativeToken);
@@ -427,7 +428,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     recipientAddress: string,
     overrides: PayableOverrides & { from?: string | Promise<string> } = {},
   ): Promise<ethers.ContractReceipt> {
-    const signer = this.context.getSigner(sendingChain);
+    const signer = this.wormhole.getSigner(sendingChain);
     if (!signer) throw new Error(`No signer for ${sendingChain}`);
 
     // approve for ERC-20 token transfers
@@ -483,7 +484,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     signedVAA: Uint8Array,
     overrides: Overrides & { from?: string | Promise<string> } = {},
   ): Promise<ContractReceipt> {
-    const signer = this.context.getSigner(destChain);
+    const signer = this.wormhole.getSigner(destChain);
     if (!signer) throw new Error(`No signer for ${destChain}`);
     const tx = await this.prepareRedeem(destChain, signedVAA, overrides);
     const v = await signer.sendTransaction(tx);
@@ -519,7 +520,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     tx: string,
     chain: ChainName | ChainId,
   ): Promise<ParsedMessage[] | ParsedRelayerMessage[]> {
-    const provider = this.context.mustGetProvider(chain);
+    const provider = this.wormhole.mustGetProvider(chain);
     const receipt = await provider.getTransactionReceipt(tx);
     if (!receipt) throw new Error(`No receipt for ${tx} on ${chain}`);
 
@@ -539,26 +540,26 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
         Implementation__factory.createInterface().parseLog(bridgeLog);
 
       // parse token bridge message
-      const fromChain = this.context.toChainName(chain);
+      const fromChain = this.wormhole.toChainName(chain);
       if (parsed.args.payload.startsWith('0x01')) {
         const parsedTransfer = await bridge.parseTransfer(parsed.args.payload); // for bridge messages
-        const destContext = this.context.getContext(
+        const destContext = this.wormhole.getContext(
           parsedTransfer.toChain as ChainId,
         );
-        const tokenContext = this.context.getContext(
+        const tokenContext = this.wormhole.getContext(
           parsedTransfer.tokenChain as ChainId,
         );
         const tokenAddress = await tokenContext.parseAssetAddress(
           parsedTransfer.tokenAddress,
         );
-        const tokenChain = this.context.toChainName(parsedTransfer.tokenChain);
+        const tokenChain = this.wormhole.toChainName(parsedTransfer.tokenChain);
         const parsedMessage: ParsedMessage = {
           sendTx: tx,
           sender: receipt.from,
           amount: parsedTransfer.amount,
           payloadID: parsedTransfer.payloadID,
           recipient: destContext.parseAddress(parsedTransfer.to),
-          toChain: this.context.toChainName(parsedTransfer.toChain),
+          toChain: this.wormhole.toChainName(parsedTransfer.toChain),
           fromChain,
           tokenAddress,
           tokenChain,
@@ -578,11 +579,11 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
       const parsedTransfer = await bridge.parseTransferWithPayload(
         parsed.args.payload,
       );
-      const destContext = this.context.getContext(
+      const destContext = this.wormhole.getContext(
         parsedTransfer.toChain as ChainId,
       );
 
-      const toChain = this.context.toChainName(parsedTransfer.toChain);
+      const toChain = this.wormhole.toChainName(parsedTransfer.toChain);
 
       /**
        * Not all relayers follow the same payload structure (i.e. sei)
@@ -593,13 +594,13 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
           Buffer.from(utils.arrayify(parsedTransfer.payload)),
         );
 
-      const tokenContext = this.context.getContext(
+      const tokenContext = this.wormhole.getContext(
         parsedTransfer.tokenChain as ChainId,
       );
       const tokenAddress = await tokenContext.parseAssetAddress(
         parsedTransfer.tokenAddress,
       );
-      const tokenChain = this.context.toChainName(parsedTransfer.tokenChain);
+      const tokenChain = this.wormhole.toChainName(parsedTransfer.tokenChain);
       const parsedMessage: ParsedRelayerMessage = {
         sendTx: tx,
         sender: receipt.from,
@@ -638,14 +639,14 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     // get asset address
     const address = await this.mustGetForeignAsset(tokenId, sourceChain);
     // get token decimals
-    const provider = this.context.mustGetProvider(sourceChain);
+    const provider = this.wormhole.mustGetProvider(sourceChain);
     const tokenContract = TokenImplementation__factory.connect(
       address,
       provider,
     );
     const decimals = await tokenContract.decimals();
     // get relayer fee as token amt
-    const destChainId = this.context.toChainId(destChain);
+    const destChainId = this.wormhole.toChainId(destChain);
     return await relayer.calculateRelayerFee(destChainId, address, decimals);
   }
 
@@ -676,7 +677,7 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
   }
 
   async getCurrentBlock(chain: ChainName | ChainId): Promise<number> {
-    const provider = this.context.mustGetProvider(chain);
+    const provider = this.wormhole.mustGetProvider(chain);
     return await provider.getBlockNumber();
   }
 }

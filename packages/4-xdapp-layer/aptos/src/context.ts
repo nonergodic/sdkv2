@@ -16,6 +16,7 @@ import {
   parseTokenTransferPayload,
   TokenBridgeAbstract,
   MAINNET_CHAINS,
+  Network,
 } from '@wormhole-foundation/sdk-base';
 import { AptosContracts } from './contracts';
 import {
@@ -35,18 +36,18 @@ export const APTOS_COIN = '0x1::aptos_coin::AptosCoin';
 export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload> {
   readonly type = Context.APTOS;
   readonly contracts: AptosContracts;
-  readonly context: Wormhole;
+  protected wormhole: Wormhole;
   readonly aptosClient: AptosClient;
   readonly coinClient: CoinClient;
 
-  constructor(context: Wormhole) {
+  constructor(network: Network, wormholeInstance?: Wormhole) {
     super();
-    this.context = context;
-    const rpc = context.conf.rpcs.aptos;
+    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    const rpc = this.wormhole.conf.rpcs.aptos;
     if (rpc === undefined) throw new Error('No Aptos rpc configured');
     this.aptosClient = new AptosClient(rpc);
     this.coinClient = new CoinClient(this.aptosClient);
-    this.contracts = new AptosContracts(context, this.aptosClient);
+    this.contracts = new AptosContracts(this.wormhole, this.aptosClient);
   }
 
   async startTransfer(
@@ -58,8 +59,8 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
     recipientAddress: string,
     relayerFee: string = '0',
   ): Promise<Types.EntryFunctionPayload> {
-    const destContext = this.context.getContext(recipientChain);
-    const recipientChainId = this.context.toChainId(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
+    const recipientChainId = this.wormhole.toChainId(recipientChain);
 
     let recipientAccount = recipientAddress;
     // get token account for solana
@@ -71,7 +72,7 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
           chain: 'aptos',
         };
       }
-      recipientAccount = await this.context.getSolanaRecipientAddress(
+      recipientAccount = await this.wormhole.getSolanaRecipientAddress(
         recipientChain,
         tokenId as TokenId,
         recipientAddress,
@@ -143,14 +144,14 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
     tokenId: TokenId,
     chain: ChainName | ChainId,
   ): Promise<string | null> {
-    const chainId = this.context.toChainId(tokenId.chain);
-    const toChainId = this.context.toChainId(chain);
+    const chainId = this.wormhole.toChainId(tokenId.chain);
+    const toChainId = this.wormhole.toChainId(chain);
     if (toChainId === chainId) return tokenId.address;
 
-    const { token_bridge } = this.context.mustGetContracts(chain);
+    const { token_bridge } = this.wormhole.mustGetContracts(chain);
     if (!token_bridge) throw new Error('token bridge contract not found');
 
-    const tokenContext = this.context.getContext(tokenId.chain);
+    const tokenContext = this.wormhole.getContext(tokenId.chain);
     const formattedAddr = await tokenContext.formatAssetAddress(
       tokenId.address,
     );
@@ -206,12 +207,12 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
     const parsed = parseTokenTransferPayload(
       Buffer.from(payload.slice(2), 'hex'),
     );
-    const tokenContext = this.context.getContext(parsed.tokenChain as ChainId);
-    const destContext = this.context.getContext(parsed.toChain as ChainId);
+    const tokenContext = this.wormhole.getContext(parsed.tokenChain as ChainId);
+    const destContext = this.wormhole.getContext(parsed.toChain as ChainId);
     const tokenAddress = await tokenContext.parseAssetAddress(
       hexlify(parsed.tokenAddress),
     );
-    const tokenChain = this.context.toChainName(parsed.tokenChain);
+    const tokenChain = this.wormhole.toChainName(parsed.tokenChain);
     // make sender address even-length
     const emitter = hexlify(sender, {
       allowMissingPrefix: true,
@@ -223,8 +224,8 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
       amount: BigNumber.from(parsed.amount),
       payloadID: Number(parsed.payloadType),
       recipient: destContext.parseAddress(hexlify(parsed.to)),
-      toChain: this.context.toChainName(parsed.toChain),
-      fromChain: this.context.toChainName(chain),
+      toChain: this.wormhole.toChainName(parsed.toChain),
+      fromChain: this.wormhole.toChainName(chain),
       tokenAddress,
       tokenChain,
       tokenId: {

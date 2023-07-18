@@ -15,27 +15,27 @@ import { SuiRelayer } from './relayer';
  */
 export class SuiContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly context: Wormhole;
+  readonly wormhole: Wormhole;
   readonly provider: JsonRpcProvider;
 
-  constructor(context: Wormhole, provider: JsonRpcProvider) {
+  constructor(wormholeBase: Wormhole, provider: JsonRpcProvider) {
     super();
-    this.context = context;
+    this.wormhole = wormholeBase;
     this.provider = provider;
     this._contracts = new Map();
-    const chains = filterByContext(context.conf, Context.SUI);
+    const chains = filterByContext(wormholeBase.conf, Context.SUI);
     chains.forEach((c) => {
       this._contracts.set(c.key, c.contracts);
     });
   }
 
   getContracts(chain: ChainName | ChainId): Contracts | undefined {
-    const chainName = this.context.toChainName(chain);
+    const chainName = this.wormhole.toChainName(chain);
     return this._contracts.get(chainName);
   }
 
   mustGetContracts(chain: ChainName | ChainId): Contracts {
-    const chainName = this.context.toChainName(chain);
+    const chainName = this.wormhole.toChainName(chain);
     const contracts = this._contracts.get(chainName);
     if (!contracts) throw new Error(`no Sui contracts found for ${chain}`);
     return contracts;

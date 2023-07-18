@@ -23,30 +23,30 @@ import { createReadOnlyNftBridgeProgramInterface } from './utils/nftBridge';
  */
 export class SolContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly context: Wormhole;
+  readonly wormhole: Wormhole;
 
-  constructor(context: Wormhole) {
+  constructor(wormholeBase: Wormhole) {
     super();
-    this.context = context;
-    const tag = context.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
+    this.wormhole = wormholeBase;
+    const tag = wormholeBase.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
     this._contracts = new Map();
-    const chains = filterByContext(context.conf, Context.SOLANA);
+    const chains = filterByContext(wormholeBase.conf, Context.SOLANA);
     chains.forEach((c) => {
       this._contracts.set(c.key, c.contracts);
     });
   }
 
   get connection() {
-    return (this.context as any).connection;
+    return (this.wormhole as any).connection;
   }
 
   getContracts(chain: ChainName | ChainId): Contracts | undefined {
-    const chainName = this.context.toChainName(chain);
+    const chainName = this.wormhole.toChainName(chain);
     return this._contracts.get(chainName);
   }
 
   mustGetContracts(chain: ChainName | ChainId): Contracts {
-    const chainName = this.context.toChainName(chain);
+    const chainName = this.wormhole.toChainName(chain);
     const contracts = this._contracts.get(chainName);
     if (!contracts) throw new Error(`no Solana contracts found for ${chain}`);
     return contracts;
@@ -60,7 +60,7 @@ export class SolContracts extends ContractsAbstract {
   getCore(chain?: ChainName | ChainId): Program<WormholeCore> | undefined {
     if (!this.connection) throw new Error('no connection');
 
-    const contracts = this.context.mustGetContracts('solana');
+    const contracts = this.wormhole.mustGetContracts('solana');
     if (!contracts.core) return;
 
     return createReadOnlyWormholeProgramInterface(
@@ -88,7 +88,7 @@ export class SolContracts extends ContractsAbstract {
   getBridge(chain?: ChainName | ChainId): Program<TokenBridge> | undefined {
     if (!this.connection) throw new Error('no connection');
 
-    const contracts = this.context.mustGetContracts('solana');
+    const contracts = this.wormhole.mustGetContracts('solana');
     if (!contracts.token_bridge) return;
 
     return createReadOnlyTokenBridgeProgramInterface(
@@ -117,7 +117,7 @@ export class SolContracts extends ContractsAbstract {
   getNftBridge(chain?: ChainName | ChainId): Program<NftBridge> | undefined {
     if (!this.connection) throw new Error('no connection');
 
-    const contracts = this.context.mustGetContracts('solana');
+    const contracts = this.wormhole.mustGetContracts('solana');
     if (!contracts.nft_bridge) return;
 
     return createReadOnlyNftBridgeProgramInterface(

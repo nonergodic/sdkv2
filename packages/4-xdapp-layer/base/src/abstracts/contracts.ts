@@ -21,7 +21,7 @@ export abstract class ContractsAbstract {
    * A reference to the wormhole base class
    * @internal
    */
-  protected abstract readonly context: Wormhole;
+  protected abstract readonly wormhole: Wormhole;
 
   /**
    * Get the core wormhole contract interface

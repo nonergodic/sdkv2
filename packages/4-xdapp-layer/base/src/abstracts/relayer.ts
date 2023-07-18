@@ -25,7 +25,7 @@ export abstract class RelayerAbstract<
    * @returns True/False if the Token Bridge relayer is supported or not
    */
   relaySupported(chain: ChainName | ChainId) {
-    const contracts = this.context.getContracts(chain);
+    const contracts = this.wormhole.getContracts(chain);
     if (!contracts) return false;
     return !!contracts.relayer;
   }

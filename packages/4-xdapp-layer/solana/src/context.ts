@@ -75,20 +75,21 @@ const SOLANA_TESTNET_EMITTER_ID =
  * @category Solana
  */
 export class SolanaContext
-  implements TokenBridgeAbstract<Transaction>, SolanaAbstract
+  extends TokenBridgeAbstract<Transaction> implements SolanaAbstract
 {
   readonly type = Context.SOLANA;
   readonly contracts: SolContracts;
-  readonly context: Wormhole;
+  protected wormhole: Wormhole;
   connection: Connection | undefined;
 
-  constructor(context: Wormhole) {
-    this.context = context;
-    const tag = context.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
+  constructor(network: Network, wormholeInstance?: Wormhole) {
+    super();
+    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    const tag = this.wormhole.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
     this.connection = new Connection(
-      context.conf.rpcs.solana || clusterApiUrl(tag),
+      this.wormhole.conf.rpcs.solana || clusterApiUrl(tag),
     );
-    this.contracts = new SolContracts(context);
+    this.contracts = new SolContracts(this.wormhole);
   }
 
   /**
@@ -316,7 +317,7 @@ export class SolanaContext
           nonce,
           amount,
           Buffer.from(recipientAddress),
-          this.context.toChainId(recipientChain),
+          this.wormhole.toChainId(recipientChain),
           payload,
         )
       : createTransferNativeInstruction(
@@ -331,7 +332,7 @@ export class SolanaContext
           amount,
           relayerFee || BigInt(0),
           Buffer.from(recipientAddress),
-          this.context.toChainId(recipientChain),
+          this.wormhole.toChainId(recipientChain),
         );
 
     //Close the ancillary account for cleanup. Payer address receives any remaining funds
@@ -394,7 +395,7 @@ export class SolanaContext
       throw new Error('contracts not found');
     }
 
-    const recipientChainId = this.context.toChainId(recipientChain);
+    const recipientChainId = this.wormhole.toChainId(recipientChain);
     if (fromOwnerAddress === undefined) {
       fromOwnerAddress = senderAddress;
     }
@@ -462,7 +463,7 @@ export class SolanaContext
     commitment?: Commitment,
   ): Promise<Transaction> {
     if (!this.connection) throw new Error('no connection');
-    const destContext = this.context.getContext(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
     const formattedRecipient = arrayify(
       destContext.formatAddress(recipientAddress),
     );
@@ -479,7 +480,7 @@ export class SolanaContext
         'finalized',
       );
     } else {
-      const tokenContext = this.context.getContext(token.chain);
+      const tokenContext = this.wormhole.getContext(token.chain);
       const formattedTokenAddr = arrayify(
         await tokenContext.formatAssetAddress(token.address),
       );
@@ -500,7 +501,7 @@ export class SolanaContext
         recipientChain,
         formattedRecipient,
         splToken.value[0].pubkey,
-        this.context.toChainId(token.chain),
+        this.wormhole.toChainId(token.chain),
         formattedTokenAddr,
         undefined,
         relayerFeeBN,
@@ -521,7 +522,7 @@ export class SolanaContext
     commitment?: Commitment,
   ): Promise<Transaction> {
     if (!this.connection) throw new Error('no connection');
-    const destContext = this.context.getContext(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
     const formattedRecipient = arrayify(
       destContext.formatAddress(recipientAddress),
     );
@@ -537,7 +538,7 @@ export class SolanaContext
         'finalized',
       );
     } else {
-      const tokenContext = this.context.getContext(token.chain);
+      const tokenContext = this.wormhole.getContext(token.chain);
       const formattedTokenAddr = arrayify(
         await tokenContext.formatAssetAddress(token.address),
       );
@@ -558,7 +559,7 @@ export class SolanaContext
         recipientChain,
         formattedRecipient,
         splToken.value[0].pubkey,
-        this.context.resolveDomain(token.chain),
+        this.wormhole.resolveDomain(token.chain),
         formattedTokenAddr,
         undefined,
         undefined,
@@ -598,14 +599,14 @@ export class SolanaContext
   ): Promise<string | null> {
     if (!this.connection) throw new Error('no connection');
 
-    const chainId = this.context.toChainId(tokenId.chain);
-    const toChainId = this.context.toChainId(chain);
+    const chainId = this.wormhole.toChainId(tokenId.chain);
+    const toChainId = this.wormhole.toChainId(chain);
     if (toChainId === chainId) return tokenId.address;
 
-    const contracts = this.context.mustGetContracts(chain);
+    const contracts = this.wormhole.mustGetContracts(chain);
     if (!contracts.token_bridge) throw new Error('contracts not found');
 
-    const tokenContext = this.context.getContext(tokenId.chain);
+    const tokenContext = this.wormhole.getContext(tokenId.chain);
     const formattedAddr = await tokenContext.formatAssetAddress(
       tokenId.address,
     );
@@ -679,13 +680,13 @@ export class SolanaContext
     }
 
     // format response
-    const tokenContext = this.context.getContext(parsed.tokenChain as ChainId);
-    const destContext = this.context.getContext(parsed.toChain as ChainId);
+    const tokenContext = this.wormhole.getContext(parsed.tokenChain as ChainId);
+    const destContext = this.wormhole.getContext(parsed.toChain as ChainId);
 
     const tokenAddress = await tokenContext.parseAssetAddress(
       hexlify(parsed.tokenAddress),
     );
-    const tokenChain = this.context.toChainName(parsed.tokenChain);
+    const tokenChain = this.wormhole.toChainName(parsed.tokenChain);
 
     const toAddress = destContext.parseAddress(hexlify(parsed.to));
 
@@ -695,8 +696,8 @@ export class SolanaContext
       amount: BigNumber.from(parsed.amount),
       payloadID: parsed.payloadType,
       recipient: toAddress,
-      toChain: this.context.toChainName(parsed.toChain),
-      fromChain: this.context.toChainName(chain),
+      toChain: this.wormhole.toChainName(parsed.toChain),
+      fromChain: this.wormhole.toChainName(chain),
       tokenAddress,
       tokenChain,
       tokenId: {
@@ -705,7 +706,7 @@ export class SolanaContext
       },
       sequence: BigNumber.from(sequence),
       emitterAddress:
-        this.context.conf.network === Network.MAINNET
+        this.wormhole.conf.network === Network.MAINNET
           ? SOLANA_MAINNET_EMMITER_ID
           : SOLANA_TESTNET_EMITTER_ID,
       gasFee: BigNumber.from(gasFee),
@@ -713,7 +714,7 @@ export class SolanaContext
     };
 
     if (parsedMessage.payloadID === 3) {
-      const destContext = this.context.getContext(parsed.toChain as ChainId);
+      const destContext = this.wormhole.getContext(parsed.toChain as ChainId);
       const parsedPayload = destContext.parseRelayerPayload(
         parsed.tokenTransferPayload,
       );

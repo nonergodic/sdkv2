@@ -23,6 +23,7 @@ import {
   Wormhole,
   RelayerAbstract,
   MAINNET_CHAINS,
+  Network,
 } from '@wormhole-foundation/sdk-base';
 
 import { SuiContracts } from './contracts';
@@ -42,18 +43,18 @@ import {
 export class SuiContext extends RelayerAbstract<TransactionBlock> {
   readonly type = Context.SUI;
   readonly contracts: SuiContracts;
-  readonly context: Wormhole;
+  protected wormhole: Wormhole;
   readonly provider: JsonRpcProvider;
 
-  constructor(context: Wormhole) {
+  constructor(network: Network, wormholeInstance?: Wormhole) {
     super();
-    this.context = context;
-    const connection = context.conf.rpcs.sui;
+    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    const connection = this.wormhole.conf.rpcs.sui;
     if (connection === undefined) throw new Error('no connection');
     this.provider = new JsonRpcProvider(
       new Connection({ fullnode: connection }),
     );
-    this.contracts = new SuiContracts(context, this.provider);
+    this.contracts = new SuiContracts(this.wormhole, this.provider);
   }
 
   async getCoins(coinType: string, owner: string) {
@@ -81,8 +82,8 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
     relayerFee: any,
     payload?: Uint8Array | undefined,
   ): Promise<TransactionBlock> {
-    const destContext = this.context.getContext(recipientChain);
-    const recipientChainId = this.context.toChainId(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
+    const recipientChainId = this.wormhole.toChainId(recipientChain);
     const relayerFeeBigInt = relayerFee ? BigInt(relayerFee) : undefined;
     const amountBigInt = BigNumber.from(amount).toBigInt();
 
@@ -96,7 +97,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
           chain: 'sui',
         };
       }
-      recipientAccount = await this.context.getSolanaRecipientAddress(
+      recipientAccount = await this.wormhole.getSolanaRecipientAddress(
         recipientChain,
         tokenId as TokenId,
         recipientAddress,
@@ -114,7 +115,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
     }
     const coins = await this.getCoins(coinType, senderAddress);
 
-    const { core, token_bridge } = this.context.mustGetContracts('sui');
+    const { core, token_bridge } = this.wormhole.mustGetContracts('sui');
     if (!core || !token_bridge) throw new Error('contracts not found');
 
     const tx = await transferFromSui(
@@ -222,7 +223,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
       const coinType = await getForeignAsset(
         this.provider,
         token_bridge,
-        this.context.toChainId('sui'),
+        this.wormhole.toChainId('sui'),
         arrayify(address),
       );
       if (coinType === null) {
@@ -240,13 +241,13 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
     chain: ChainName | ChainId,
   ): Promise<string | null> {
     try {
-      const chainId = this.context.toChainId(tokenId.chain);
-      const toChainId = this.context.toChainId(chain);
+      const chainId = this.wormhole.toChainId(tokenId.chain);
+      const toChainId = this.wormhole.toChainId(chain);
       if (toChainId === chainId) return tokenId.address;
       const { token_bridge } = this.contracts.mustGetContracts('sui');
       if (!token_bridge) throw new Error('token bridge contract not found');
 
-      const tokenContext = this.context.getContext(tokenId.chain);
+      const tokenContext = this.wormhole.getContext(tokenId.chain);
       const formattedAddr = await tokenContext.formatAssetAddress(
         tokenId.address,
       );
@@ -301,12 +302,12 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
     }
     const { payload, sender: emitterAddress, sequence } = message.parsedJson;
     const parsed = parseTokenTransferPayload(Buffer.from(payload));
-    const tokenContext = this.context.getContext(parsed.tokenChain as ChainId);
-    const destContext = this.context.getContext(parsed.toChain as ChainId);
+    const tokenContext = this.wormhole.getContext(parsed.tokenChain as ChainId);
+    const destContext = this.wormhole.getContext(parsed.toChain as ChainId);
     const tokenAddress = await tokenContext.parseAssetAddress(
       hexlify(parsed.tokenAddress),
     );
-    const tokenChain = this.context.toChainName(parsed.tokenChain);
+    const tokenChain = this.wormhole.toChainName(parsed.tokenChain);
     const gasFee = getTotalGasUsed(txBlock);
     const parsedMessage: ParsedMessage = {
       sendTx: tx,
@@ -314,8 +315,8 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
       amount: BigNumber.from(parsed.amount),
       payloadID: parsed.payloadType,
       recipient: destContext.parseAddress(hexlify(parsed.to)),
-      toChain: this.context.toChainName(parsed.toChain),
-      fromChain: this.context.toChainName(chain),
+      toChain: this.wormhole.toChainName(parsed.toChain),
+      fromChain: this.wormhole.toChainName(chain),
       tokenAddress,
       tokenChain,
       tokenId: {
@@ -402,8 +403,8 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
     recipientAddress: string,
     overrides?: any,
   ): Promise<TransactionBlock> {
-    const destContext = this.context.getContext(recipientChain);
-    const recipientChainId = this.context.toChainId(recipientChain);
+    const destContext = this.wormhole.getContext(recipientChain);
+    const recipientChainId = this.wormhole.toChainId(recipientChain);
     const amountBigInt = BigNumber.from(amount).toBigInt();
     const toNativeTokenBigInt = BigNumber.from(toNativeToken).toBigInt();
 
@@ -417,7 +418,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
           chain: 'sui',
         };
       }
-      recipientAccount = await this.context.getSolanaRecipientAddress(
+      recipientAccount = await this.wormhole.getSolanaRecipientAddress(
         recipientChain,
         tokenId as TokenId,
         recipientAddress,
@@ -443,7 +444,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
       );
     }
     const { core, token_bridge, relayer, suiRelayerPackageId } =
-      this.context.mustGetContracts('sui');
+      this.wormhole.mustGetContracts('sui');
     if (!core || !token_bridge || !relayer || !suiRelayerPackageId)
       throw new Error('contracts not found');
     const coreBridgePackageId = await getPackageId(this.provider, core);
@@ -552,7 +553,7 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
     ) as SuiRelayer;
     const address = await this.mustGetForeignAsset(tokenId, sourceChain);
     const decimals = await this.fetchTokenDecimals(address, sourceChain);
-    const destChainId = this.context.toChainId(destChain);
+    const destChainId = this.wormhole.toChainId(destChain);
     const fee = await relayer.calculateRelayerFee(
       destChainId,
       address,

@@ -1,14 +1,9 @@
-import {
-  Wormhole,
-  filterByContext,
-  ContractsAbstract,
-  ChainName,
-  ChainId,
-  Context,
-  Contracts,
-} from '@wormhole-foundation/sdk-base';
+import { ContractsAbstract } from "../src/abstracts/contracts";
+import { ChainName, ChainId, Context } from "../src/types";
+import { Wormhole } from "../src/wormhole";
+import { filterByContext } from "../src/utils";
 
-export class SeiContracts extends ContractsAbstract {
+export class MockContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
   protected wormhole: Wormhole;
 
@@ -22,12 +17,12 @@ export class SeiContracts extends ContractsAbstract {
     });
   }
 
-  getContracts(chain: ChainName | ChainId): Contracts | undefined {
+  getContracts(chain: ChainName | ChainId): any | undefined {
     const chainName = this.wormhole.toChainName(chain);
     return this._contracts.get(chainName);
   }
 
-  mustGetContracts(chain: ChainName | ChainId): Contracts {
+  mustGetContracts(chain: ChainName | ChainId): any {
     const chainName = this.wormhole.toChainName(chain);
     const contracts = this._contracts.get(chainName);
     if (!contracts) throw new Error(`no Sui contracts found for ${chain}`);

@@ -1,8 +1,9 @@
-import { Domain, MultiProvider } from "@nomad-xyz/multi-provider";
-import { BigNumber } from "ethers";
+import { Domain, MultiProvider } from '@nomad-xyz/multi-provider';
+import { BigNumber } from 'ethers';
+import axios from 'axios';
 
-import MAINNET_CONFIG, { MAINNET_CHAINS } from "./config/MAINNET";
-import TESTNET_CONFIG, { TESTNET_CHAINS } from "./config/TESTNET";
+import MAINNET_CONFIG, { MAINNET_CHAINS } from './config/MAINNET';
+import TESTNET_CONFIG, { TESTNET_CHAINS } from './config/TESTNET';
 import {
   AnyContext,
   ChainId,
@@ -10,6 +11,7 @@ import {
   Context,
   ContextConfig,
   Contracts,
+  MessageIdentifier,
   Network,
   ParsedMessage,
   ParsedRelayerMessage,
@@ -17,7 +19,8 @@ import {
   SendResult,
   TokenId,
   WormholeConfig,
-} from "./types";
+} from './types';
+import { ParsedVaa, parseVaa } from './vaa';
 
 /**
  * The WormholeContext manages connections to Wormhole Core, Bridge and NFT Bridge contracts.
@@ -54,7 +57,7 @@ export class Wormhole extends MultiProvider<Domain> {
   constructor(
     network: Network,
     contexts: ContextConfig,
-    conf?: WormholeConfig
+    conf?: WormholeConfig,
   ) {
     super();
 
@@ -85,7 +88,7 @@ export class Wormhole extends MultiProvider<Domain> {
       const chains =
         this.conf.network === Network.MAINNET ? MAINNET_CHAINS : TESTNET_CHAINS;
       const chainConfig = (chains as any)[n];
-      if (!chainConfig) throw new Error("invalid network name");
+      if (!chainConfig) throw new Error('invalid network name');
       // register domain
       this.registerDomain({
         // @ts-ignore
@@ -149,7 +152,7 @@ export class Wormhole extends MultiProvider<Domain> {
     const chainName = this.toChainName(chain);
     const { context: contextType } = this.conf.chains[chainName]!;
     const context = this._contexts[contextType];
-    if (!context) throw new Error("Not able to retrieve context");
+    if (!context) throw new Error('Not able to retrieve context');
     return context;
   }
 
@@ -162,7 +165,7 @@ export class Wormhole extends MultiProvider<Domain> {
    */
   async getForeignAsset(
     tokenId: TokenId,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<string | null> {
     const context = this.getContext(chain);
     return await context.getForeignAsset(tokenId, chain);
@@ -178,7 +181,7 @@ export class Wormhole extends MultiProvider<Domain> {
    */
   async mustGetForeignAsset(
     tokenId: TokenId,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<string> {
     const context = this.getContext(chain);
     return await context.mustGetForeignAsset(tokenId, chain);
@@ -193,7 +196,7 @@ export class Wormhole extends MultiProvider<Domain> {
    */
   async fetchTokenDecimals(
     tokenId: TokenId,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<number> {
     const context = this.getContext(chain);
     const repr = await context.mustGetForeignAsset(tokenId, chain);
@@ -209,7 +212,7 @@ export class Wormhole extends MultiProvider<Domain> {
    */
   async getNativeBalance(
     walletAddress: string,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<BigNumber> {
     const context = this.getContext(chain);
     return await context.getNativeBalance(walletAddress, chain);
@@ -226,7 +229,7 @@ export class Wormhole extends MultiProvider<Domain> {
   async getTokenBalance(
     walletAddress: string,
     tokenId: TokenId,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<BigNumber | null> {
     const context = this.getContext(chain);
     return await context.getTokenBalance(walletAddress, tokenId, chain);
@@ -249,14 +252,14 @@ export class Wormhole extends MultiProvider<Domain> {
    * @throws If unable to get the signer or contracts, or if there is a problem executing the transaction
    */
   async startTransfer(
-    token: TokenId | "native",
+    token: TokenId | 'native',
     amount: bigint,
     sendingChain: ChainName | ChainId,
     senderAddress: string,
     recipientChain: ChainName | ChainId,
     recipientAddress: string,
     relayerFee?: string,
-    payload?: Uint8Array
+    payload?: Uint8Array,
   ): Promise<SendResult> {
     const context = this.getContext(sendingChain);
 
@@ -277,7 +280,7 @@ export class Wormhole extends MultiProvider<Domain> {
         senderAddress,
         recipientChain,
         recipientAddress,
-        payload
+        payload,
       );
     }
     return context.startTransfer(
@@ -287,7 +290,7 @@ export class Wormhole extends MultiProvider<Domain> {
       senderAddress,
       recipientChain,
       recipientAddress,
-      relayerFee
+      relayerFee,
     );
   }
 
@@ -299,7 +302,7 @@ export class Wormhole extends MultiProvider<Domain> {
   supportsSendWithRelay(chain: ChainName | ChainId): boolean {
     return !!(
       this.getContracts(chain)?.relayer &&
-      "startTransferWithRelay" in this.getContext(chain)
+      'startTransferWithRelay' in this.getContext(chain)
     );
   }
 
@@ -316,24 +319,24 @@ export class Wormhole extends MultiProvider<Domain> {
    * @throws If unable to get the signer or contracts, or if there is a problem executing the transaction
    */
   async startTransferWithRelay(
-    token: TokenId | "native",
+    token: TokenId | 'native',
     amount: bigint,
     sendingChain: ChainName | ChainId,
     senderAddress: string,
     recipientChain: ChainName | ChainId,
     recipientAddress: string,
     toNativeToken: string,
-    relayerFee?: string
+    relayerFee?: string,
   ): Promise<SendResult> {
     if (!this.supportsSendWithRelay(sendingChain)) {
       throw new Error(
-        `Relayer is not supported on ${this.toChainName(sendingChain)}`
+        `Relayer is not supported on ${this.toChainName(sendingChain)}`,
       );
     }
 
     const context = this.getContext(sendingChain);
-    if (!("startTransferWithRelay" in context)) {
-      throw new Error("startTransferWithRelay function not found");
+    if (!('startTransferWithRelay' in context)) {
+      throw new Error('startTransferWithRelay function not found');
     }
 
     return context.startTransferWithRelay(
@@ -343,7 +346,7 @@ export class Wormhole extends MultiProvider<Domain> {
       sendingChain,
       senderAddress,
       recipientChain,
-      recipientAddress
+      recipientAddress,
     );
   }
 
@@ -360,15 +363,57 @@ export class Wormhole extends MultiProvider<Domain> {
     destChain: ChainName | ChainId,
     signedVAA: Uint8Array,
     overrides: any,
-    receivingAddr?: string
+    receivingAddr?: string,
   ): Promise<RedeemResult> {
     const context = this.getContext(destChain);
     return await context.completeTransfer(
       destChain,
       signedVAA,
       overrides,
-      receivingAddr
+      receivingAddr,
     );
+  }
+
+  /**
+   * Gets required fields from a ParsedMessage or ParsedRelayerMessage used to fetch a VAA
+   *
+   * @param txData The ParsedMessage or ParsedRelayerMessage that is the result of a transaction on a source chain
+   * @returns The MessageIdentifier collection of fields to uniquely identify a VAA
+   */
+
+  getMessageIdentifier(
+    txData: ParsedMessage | ParsedRelayerMessage,
+  ): MessageIdentifier {
+    // TODO: wh-connect checks finality first, do we need to?
+    const emitterChain = this.toChainId(txData.fromChain);
+    const emitterAddress = txData.emitterAddress.startsWith('0x')
+      ? txData.emitterAddress.slice(2)
+      : txData.emitterAddress;
+
+    return {
+      emitterChain: emitterChain,
+      emitterAddress,
+      sequence: txData.sequence.toString(),
+    };
+  }
+
+  /**
+   * Gets a VAA from the API or Guardian RPC, finality must be met before the VAA will be available. See {@link ChainConfig.finalityThreshold | finalityThreshold} on {@link MAINNET_CONFIG | the config}
+   *
+   * @param msg The MessageIdentifier used to fetch the VAA
+   * @returns The ParsedVAA if available
+   */
+  async getVAA(msg: MessageIdentifier): Promise<ParsedVaa | undefined> {
+    const { emitterChain, emitterAddress, sequence } = msg;
+    const url = `${this.conf.api}/api/v1/vaas/${emitterChain}/${emitterAddress}/${sequence}`;
+    const response = await axios.get(url);
+
+    // TODO: raise exception? wait?
+    if (!response.data.data) return;
+
+    const data = response.data.data;
+    const vaaBytes = Buffer.from(data.vaa, 'base64');
+    return parseVaa(vaaBytes);
   }
 
   /**
@@ -380,7 +425,7 @@ export class Wormhole extends MultiProvider<Domain> {
    */
   async isTransferCompleted(
     destChain: ChainName | ChainId,
-    signedVaa: string
+    signedVaa: string,
   ): Promise<boolean> {
     const context = this.getContext(destChain);
     return await context.isTransferCompleted(destChain, signedVaa);
@@ -417,7 +462,7 @@ export class Wormhole extends MultiProvider<Domain> {
    */
   async parseMessageFromTx(
     tx: string,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<ParsedMessage[] | ParsedRelayerMessage[]> {
     const context = this.getContext(chain);
     return await context.parseMessageFromTx(tx, chain);

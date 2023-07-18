@@ -1,4 +1,4 @@
-import { BigNumber } from "ethers";
+import { BigNumber } from 'ethers';
 import {
   AnyContracts,
   ParsedMessage,
@@ -6,8 +6,8 @@ import {
   TokenId,
   ChainName,
   ChainId,
-} from "../types";
-import { SDKAbstract } from "./sdk";
+} from '../types';
+import { Wormhole } from '../wormhole';
 
 /**
  * @abstract
@@ -23,7 +23,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    * A standard set of methods for accessing interfaces for Wormhole contracts on a given chain
    */
   abstract contracts: AnyContracts;
-  abstract context: SDKAbstract;
+  abstract context: Wormhole;
 
   /**
    * Send a Token Bridge transfer
@@ -40,13 +40,13 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    * @returns The transaction receipt
    */
   abstract startTransfer(
-    token: TokenId | "native",
+    token: TokenId | 'native',
     amount: bigint,
     sendingChain: ChainName | ChainId,
     senderAddress: string,
     recipientChain: ChainName | ChainId,
     recipientAddress: string,
-    relayerFee: any
+    relayerFee: any,
   ): Promise<TransactionResult>;
 
   /**
@@ -64,13 +64,13 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    * @returns The transaction receipt
    */
   abstract startTransferWithPayload(
-    token: TokenId | "native",
+    token: TokenId | 'native',
     amount: bigint,
     sendingChain: ChainName | ChainId,
     senderAddress: string,
     recipientChain: ChainName | ChainId,
     recipientAddress: string,
-    payload: any
+    payload: any,
   ): Promise<TransactionResult>;
 
   /**
@@ -116,7 +116,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    */
   abstract getForeignAsset(
     tokenId: TokenId,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<string | null>;
   /**
    * Fetches the address for a token representation on any chain (These are the Wormhole token addresses, not necessarily the cannonical version of that token)
@@ -128,7 +128,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    */
   abstract mustGetForeignAsset(
     tokenId: TokenId,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<string>;
   /**
    * Parses all relevant information from a transaction given the sending tx hash and sending chain
@@ -139,7 +139,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    */
   abstract parseMessageFromTx(
     tx: string,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<ParsedMessage[] | ParsedRelayerMessage[]>;
 
   /**
@@ -151,7 +151,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    */
   abstract getNativeBalance(
     walletAddress: string,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<BigNumber>;
   /**
    * Fetches the balance of a given token for a wallet
@@ -164,7 +164,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
   abstract getTokenBalance(
     walletAddress: string,
     tokenId: TokenId,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<BigNumber | null>;
 
   /**
@@ -180,7 +180,7 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
     destChain: ChainName | ChainId,
     signedVAA: Uint8Array,
     overrides: any,
-    payerAddr?: any
+    payerAddr?: any,
   ): Promise<TransactionResult>;
 
   /**
@@ -192,11 +192,11 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
    */
   abstract isTransferCompleted(
     destChain: ChainName | ChainId,
-    signedVaa: string
+    signedVaa: string,
   ): Promise<boolean>;
 
   abstract fetchTokenDecimals(
     tokenAddr: string,
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): Promise<number>;
 }

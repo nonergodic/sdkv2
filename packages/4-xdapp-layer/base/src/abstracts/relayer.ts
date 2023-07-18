@@ -1,6 +1,6 @@
-import { BigNumber, BigNumberish } from "ethers";
-import { TokenId, ChainName, ChainId, ParsedRelayerPayload } from "../types";
-import { TokenBridgeAbstract } from "./tokenBridge";
+import { BigNumber, BigNumberish } from 'ethers';
+import { TokenId, ChainName, ChainId, ParsedRelayerPayload } from '../types';
+import { TokenBridgeAbstract } from './tokenBridge';
 
 /**
  * @abstract
@@ -16,7 +16,7 @@ import { TokenBridgeAbstract } from "./tokenBridge";
  * }
  */
 export abstract class RelayerAbstract<
-  TransactionResult
+  TransactionResult,
 > extends TokenBridgeAbstract<TransactionResult> {
   /**
    * Returns if the Token Bridge relayer is supported on a given chain
@@ -44,14 +44,14 @@ export abstract class RelayerAbstract<
    * @returns The transaction receipt
    */
   abstract startTransferWithRelay(
-    token: TokenId | "native",
+    token: TokenId | 'native',
     amount: bigint,
     toNativeToken: string,
     sendingChain: ChainName | ChainId,
     senderAddress: string,
     recipientChain: ChainName | ChainId,
     recipientAddress: string,
-    overrides?: any
+    overrides?: any,
   ): Promise<TransactionResult>;
   /**
    * Computes the amount of native gas tokens that would be received, given current conversion rates
@@ -66,7 +66,7 @@ export abstract class RelayerAbstract<
     destChain: ChainName | ChainId,
     tokenId: TokenId,
     amount: BigNumberish,
-    walletAddress: string
+    walletAddress: string,
   ): Promise<BigNumber>;
   /**
    * Gets the maximum amount of sending token which can be converted to destination native gas token
@@ -79,7 +79,7 @@ export abstract class RelayerAbstract<
   abstract calculateMaxSwapAmount(
     destChain: ChainName | ChainId,
     tokenId: TokenId,
-    walletAddress: string
+    walletAddress: string,
   ): Promise<BigNumber>;
   /**
    * Gets the relayer fee (paid using sending token)
@@ -92,19 +92,19 @@ export abstract class RelayerAbstract<
   abstract getRelayerFee(
     sourceChain: ChainName | ChainId,
     destChain: ChainName | ChainId,
-    tokenId: TokenId
+    tokenId: TokenId,
   ): Promise<BigNumber>;
 
   parseRelayerPayload(transferPayload: Buffer): ParsedRelayerPayload {
     return {
       relayerPayloadId: transferPayload.readUint8(0),
       relayerFee: BigNumber.from(
-        "0x" + transferPayload.subarray(1, 33).toString("hex")
+        '0x' + transferPayload.subarray(1, 33).toString('hex'),
       ),
       toNativeTokenAmount: BigNumber.from(
-        "0x" + transferPayload.subarray(33, 65).toString("hex")
+        '0x' + transferPayload.subarray(33, 65).toString('hex'),
       ),
-      to: "0x" + transferPayload.subarray(65, 98).toString("hex"),
+      to: '0x' + transferPayload.subarray(65, 98).toString('hex'),
     };
   }
 }

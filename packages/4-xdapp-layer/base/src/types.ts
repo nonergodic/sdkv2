@@ -1,31 +1,31 @@
-import { BigNumber } from "ethers";
-import { ParsedVaa, SignedVaa } from "./vaa";
-import { MainnetChainId, MainnetChainName } from "./config/MAINNET";
-import { TestnetChainId, TestnetChainName } from "./config/TESTNET";
-import { RelayerAbstract } from "./abstracts/relayer";
-import { ContractsAbstract } from "./abstracts/contracts";
+import { BigNumber } from 'ethers';
+import { ParsedVaa, SignedVaa } from './vaa';
+import { MainnetChainId, MainnetChainName } from './config/MAINNET';
+import { TestnetChainId, TestnetChainName } from './config/TESTNET';
+import { RelayerAbstract } from './abstracts/relayer';
+import { ContractsAbstract } from './abstracts/contracts';
 
 export enum Network {
-  MAINNET = "mainnet",
-  TESTNET = "testnet",
-  DEVNET = "devnet",
+  MAINNET = 'mainnet',
+  TESTNET = 'testnet',
+  DEVNET = 'devnet',
 }
-export const NATIVE = "native";
+export const NATIVE = 'native';
 // TODO: conditionally set these types
 export type ChainName = MainnetChainName | TestnetChainName;
 export type ChainId = MainnetChainId | TestnetChainId;
 export enum Context {
-  ETH = "Ethereum",
-  TERRA = "Terra",
-  INJECTIVE = "Injective",
-  XPLA = "XPLA",
-  SOLANA = "Solana",
-  ALGORAND = "Algorand",
-  NEAR = "Near",
-  APTOS = "Aptos",
-  SUI = "Sui",
-  SEI = "Sei",
-  OTHER = "OTHER",
+  ETH = 'Ethereum',
+  TERRA = 'Terra',
+  INJECTIVE = 'Injective',
+  XPLA = 'XPLA',
+  SOLANA = 'Solana',
+  ALGORAND = 'Algorand',
+  NEAR = 'Near',
+  APTOS = 'Aptos',
+  SUI = 'Sui',
+  SEI = 'Sei',
+  OTHER = 'OTHER',
 }
 
 export type ChainResourceMap = {
@@ -57,6 +57,7 @@ export type ChainConfig = {
 
 export type WormholeConfig = {
   network: Network;
+  api: string;
   rpcs: ChainResourceMap;
   rest: ChainResourceMap;
   chains: {
@@ -103,6 +104,12 @@ export type ParsedRelayerMessage = ParsedMessage & ParsedRelayerPayload;
 
 export type AnyMessage = ParsedMessage | ParsedRelayerMessage;
 
+export type MessageIdentifier = {
+  emitterChain: ChainId;
+  emitterAddress: string;
+  sequence: string;
+};
+
 export type TokenDetails = {
   symbol: string;
   decimals: number;
@@ -114,8 +121,8 @@ export interface WormholeWrappedInfo {
   assetAddress: Uint8Array;
 }
 
-export type SendResult = Awaited<ReturnType<AnyContext["startTransfer"]>>;
-export type RedeemResult = Awaited<ReturnType<AnyContext["completeTransfer"]>>;
+export type SendResult = Awaited<ReturnType<AnyContext['startTransfer']>>;
+export type RedeemResult = Awaited<ReturnType<AnyContext['completeTransfer']>>;
 
 export type VaaSourceTransaction = any;
 export interface VaaInfo<T extends VaaSourceTransaction = any> {

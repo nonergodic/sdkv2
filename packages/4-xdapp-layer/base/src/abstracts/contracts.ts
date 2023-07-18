@@ -1,4 +1,4 @@
-import { ChainName, ChainId, Wormhole } from "../types";
+import { ChainName, ChainId, Wormhole } from '../types';
 
 /**
  * @abstract
@@ -67,7 +67,7 @@ export abstract class ContractsAbstract {
    * @returns The Token Bridge Relayer contract interface or undefined
    */
   protected abstract getTokenBridgeRelayer(
-    chain: ChainName | ChainId
+    chain: ChainName | ChainId,
   ): any | undefined;
   /**
    * Get the Token Bridge Relayer contract interface

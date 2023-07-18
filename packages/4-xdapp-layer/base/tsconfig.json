@@ -16,6 +16,9 @@
     "resolveJsonModule": true,
   },
   "include": [
+    "src/*.ts",
+    "src/**/*.ts",
+    "src/**/**/*.ts",
     "src/anchor-idl/*.json"
   ]
 }

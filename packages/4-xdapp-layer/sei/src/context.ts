@@ -40,6 +40,8 @@ import {
   hexToUint8Array,
   parseTokenTransferPayload,
   parseVaa,
+  NATIVE,
+  SeiAbstract,
 } from '@wormhole-foundation/sdk-base';
 import { SeiContracts } from './contracts';
 
@@ -136,7 +138,9 @@ const buildExecuteMsg = (
  *
  * @category Sei
  */
-export class SeiContext extends TokenBridgeAbstract<SeiTransaction> {
+export class SeiContext
+  implements TokenBridgeAbstract<SeiTransaction>, SeiAbstract
+{
   readonly type = Context.SEI;
   readonly contracts: SeiContracts;
   readonly context: Wormhole;
@@ -148,13 +152,12 @@ export class SeiContext extends TokenBridgeAbstract<SeiTransaction> {
   private readonly REDEEM_EVENT_DEFAULT_MAX_BLOCKS = 2000;
 
   constructor(context: Wormhole) {
-    super();
     this.context = context;
     this.contracts = new SeiContracts(context);
   }
 
   async startTransfer(
-    token: TokenId | 'native',
+    token: TokenId | typeof NATIVE,
     amount: bigint,
     sendingChain: ChainName | ChainId,
     senderAddress: string,
@@ -162,22 +165,20 @@ export class SeiContext extends TokenBridgeAbstract<SeiTransaction> {
     recipientAddress: string,
     relayerFee: string | undefined = '0',
   ): Promise<SeiTransaction> {
-    if (token === 'native') throw new Error('Native token not supported');
+    if (token === NATIVE) throw new Error('Native token not supported');
 
     const destContext = this.context.getContext(recipientChain);
     const targetChain = this.context.toChainId(recipientChain);
 
     let recipientAccount = recipientAddress;
     // get token account for solana
-    // TODO: handle Solana
-    // if (targetChain === 1) {
-    //   let tokenId = token;
-    //   // todo: fix for native sui when implemented
-    //   const account = await (
-    //     destContext as SolanaContext
-    //   ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
-    //   recipientAccount = account.toString();
-    // }
+    if (targetChain === MAINNET_CHAINS.solana) {
+      recipientAccount = await this.context.getSolanaRecipientAddress(
+        recipientChain,
+        token as TokenId,
+        recipientAddress,
+      );
+    }
 
     const targetAddress = Buffer.from(
       destContext.formatAddress(recipientAccount),

@@ -43,7 +43,7 @@ const MAINNET: { [chain in MainnetChainName]: ChainConfig } = {
   ethereum: {
     key: 'ethereum',
     id: 2,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B',
       token_bridge: '0x3ee18B2214AFF97000D974cf647E7C347E8fa585',
@@ -68,7 +68,7 @@ const MAINNET: { [chain in MainnetChainName]: ChainConfig } = {
   polygon: {
     key: 'polygon',
     id: 5,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x7A4B5a56256163F07b2C80A7cA55aBE66c4ec4d7',
       token_bridge: '0x5a58505a96D1dbf8dF91cB21B54419FC36e93fdE',
@@ -81,7 +81,7 @@ const MAINNET: { [chain in MainnetChainName]: ChainConfig } = {
   bsc: {
     key: 'bsc',
     id: 4,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x98f3c9e6E3fAce36bAAd05FE09d375Ef1464288B',
       token_bridge: '0xB6F6D86a8f9879A9c87f643768d9efc38c1Da6E7',
@@ -94,7 +94,7 @@ const MAINNET: { [chain in MainnetChainName]: ChainConfig } = {
   avalanche: {
     key: 'avalanche',
     id: 6,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x54a8e5f9c4CbA08F9943965859F6c34eAF03E26c',
       token_bridge: '0x0e082F06FF657D94310cB8cE8B0D9a04541d8052',
@@ -107,7 +107,7 @@ const MAINNET: { [chain in MainnetChainName]: ChainConfig } = {
   fantom: {
     key: 'fantom',
     id: 10,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x126783A6Cb203a3E35344528B26ca3a0489a1485',
       token_bridge: '0x7C9Fc5741288cDFdD83CeB07f3ea7e22618D79D2',
@@ -120,7 +120,7 @@ const MAINNET: { [chain in MainnetChainName]: ChainConfig } = {
   celo: {
     key: 'celo',
     id: 14,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0xa321448d90d4e5b0A732867c18eA198e75CAC48E',
       token_bridge: '0x796Dff6D74F3E27060B71255Fe517BFb23C93eed',
@@ -133,7 +133,7 @@ const MAINNET: { [chain in MainnetChainName]: ChainConfig } = {
   moonbeam: {
     key: 'moonbeam',
     id: 16,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0xC8e2b0cD52Cf01b0Ce87d389Daa3d414d4cE29f3',
       token_bridge: '0xb1731c586ca89a23809861c6103f0b96b3f57d92',

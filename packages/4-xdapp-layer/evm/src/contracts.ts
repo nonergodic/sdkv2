@@ -24,7 +24,7 @@ export class EvmContracts extends ContractsAbstract {
     super();
     this.context = context;
     this._contracts = new Map();
-    const chains = filterByContext(context.conf, Context.ETH);
+    const chains = filterByContext(context.conf, Context.EVM);
     chains.forEach((c) => {
       this._contracts.set(c.key, c.contracts);
     });

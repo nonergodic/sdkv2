@@ -42,7 +42,7 @@ const TESTNET: { [chain in TestnetChainName]: ChainConfig } = {
   goerli: {
     key: 'goerli',
     id: 2,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x706abc4E45D419950511e474C7B9Ed348A4a716c',
       token_bridge: '0xF890982f9310df57d00f659cf4fd87e65adEd8d7',
@@ -67,7 +67,7 @@ const TESTNET: { [chain in TestnetChainName]: ChainConfig } = {
   mumbai: {
     key: 'mumbai',
     id: 5,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x0CBE91CF822c73C2315FB05100C2F714765d5c20',
       token_bridge: '0x377D55a7928c046E18eEbb61977e714d2a76472a',
@@ -80,7 +80,7 @@ const TESTNET: { [chain in TestnetChainName]: ChainConfig } = {
   bsc: {
     key: 'bsc',
     id: 4,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x68605AD7b15c732a30b1BbC62BE8F2A509D74b4D',
       token_bridge: '0x9dcF9D205C9De35334D646BeE44b2D2859712A09',
@@ -93,7 +93,7 @@ const TESTNET: { [chain in TestnetChainName]: ChainConfig } = {
   fuji: {
     key: 'fuji',
     id: 6,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x7bbcE28e64B3F8b84d876Ab298393c38ad7aac4C',
       token_bridge: '0x61E44E506Ca5659E6c0bba9b678586fA2d729756',
@@ -106,7 +106,7 @@ const TESTNET: { [chain in TestnetChainName]: ChainConfig } = {
   fantom: {
     key: 'fantom',
     id: 10,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x1BB3B4119b7BA9dfad76B0545fb3F531383c3bB7',
       token_bridge: '0x599CEa2204B4FaECd584Ab1F2b6aCA137a0afbE8',
@@ -119,7 +119,7 @@ const TESTNET: { [chain in TestnetChainName]: ChainConfig } = {
   alfajores: {
     key: 'alfajores',
     id: 14,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0x88505117CA88e7dd2eC6EA1E13f0948db2D50D56',
       token_bridge: '0x05ca6037eC51F8b712eD2E6Fa72219FEaE74E153',
@@ -132,7 +132,7 @@ const TESTNET: { [chain in TestnetChainName]: ChainConfig } = {
   moonbasealpha: {
     key: 'moonbasealpha',
     id: 16,
-    context: Context.ETH,
+    context: Context.EVM,
     contracts: {
       core: '0xa5B7D85a8f27dd7907dc8FdC21FA5657D5E2F901',
       token_bridge: '0xbc976D4b9D57E57c3cA52e1Fd136C45FF7955A96',

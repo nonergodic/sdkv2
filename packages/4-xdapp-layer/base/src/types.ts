@@ -15,7 +15,7 @@ export const NATIVE = 'native';
 export type ChainName = MainnetChainName | TestnetChainName;
 export type ChainId = MainnetChainId | TestnetChainId;
 export enum Context {
-  ETH = 'Ethereum',
+  EVM = 'EVM',
   TERRA = 'Terra',
   INJECTIVE = 'Injective',
   XPLA = 'XPLA',

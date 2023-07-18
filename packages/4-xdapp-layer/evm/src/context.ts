@@ -27,6 +27,7 @@ import {
   parseVaa,
   RelayerAbstract,
   createNonce,
+  MAINNET_CHAINS,
 } from '@wormhole-foundation/sdk-base';
 import { EvmContracts } from './contracts';
 
@@ -36,7 +37,7 @@ export * from './contracts';
  * @category EVM
  */
 export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
-  readonly type = Context.ETH;
+  readonly type = Context.EVM;
   readonly contracts: EvmContracts;
   readonly context: Wormhole;
 
@@ -189,21 +190,21 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
     const bridge = this.contracts.mustGetBridge(sendingChain);
 
     let recipientAccount = recipientAddress;
-    // TODO:
     // get token account for solana
-    // if (recipientChainId === 1) {
-    //   let tokenId = token;
-    //   if (token === NATIVE) {
-    //     tokenId = {
-    //       address: await bridge.WETH(),
-    //       chain: sendingChainName,
-    //     };
-    //   }
-    //   const account = await (
-    //     destContext as SolanaContext
-    //   ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
-    //   recipientAccount = account.toString();
-    // }
+    if (recipientChainId === MAINNET_CHAINS.solana) {
+      let tokenId = token;
+      if (token === NATIVE) {
+        tokenId = {
+          address: await bridge.WETH(),
+          chain: sendingChainName,
+        };
+      }
+      recipientAccount = await this.context.getSolanaRecipientAddress(
+        recipientChain,
+        tokenId as TokenId,
+        recipientAddress,
+      );
+    }
 
     if (token === NATIVE) {
       // sending native ETH

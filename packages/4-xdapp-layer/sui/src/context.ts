@@ -22,6 +22,7 @@ import {
   parseTokenTransferPayload,
   Wormhole,
   RelayerAbstract,
+  MAINNET_CHAINS,
 } from '@wormhole-foundation/sdk-base';
 
 import { SuiContracts } from './contracts';
@@ -87,20 +88,20 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
 
     let recipientAccount = recipientAddress;
     // get token account for solana
-    // TODO: handle for Solana
-    // if (recipientChainId === 1) {
-    //   let tokenId = token;
-    //   if (token === NATIVE) {
-    //     tokenId = {
-    //       address: SUI_TYPE_ARG,
-    //       chain: 'sui',
-    //     };
-    //   }
-    //   const account = await (
-    //     destContext as SolanaContext
-    //   ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
-    //   recipientAccount = account.toString();
-    // }
+    if (recipientChainId === MAINNET_CHAINS.solana) {
+      let tokenId = token;
+      if (token === NATIVE) {
+        tokenId = {
+          address: SUI_TYPE_ARG,
+          chain: 'sui',
+        };
+      }
+      recipientAccount = await this.context.getSolanaRecipientAddress(
+        recipientChain,
+        tokenId as TokenId,
+        recipientAddress,
+      );
+    }
     const formattedRecipientAccount = arrayify(
       destContext.formatAddress(recipientAccount),
     );
@@ -408,20 +409,20 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
 
     let recipientAccount = recipientAddress;
     // get token account for solana
-    // TODO: handle for solana
-    // if (recipientChainId === 1) {
-    //   let tokenId = token;
-    //   if (token === NATIVE) {
-    //     tokenId = {
-    //       address: SUI_TYPE_ARG,
-    //       chain: 'sui',
-    //     };
-    //   }
-    //   const account = await (
-    //     destContext as SolanaContext
-    //   ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
-    //   recipientAccount = account.toString();
-    // }
+    if (recipientChainId === MAINNET_CHAINS.solana) {
+      let tokenId = token;
+      if (token === NATIVE) {
+        tokenId = {
+          address: SUI_TYPE_ARG,
+          chain: 'sui',
+        };
+      }
+      recipientAccount = await this.context.getSolanaRecipientAddress(
+        recipientChain,
+        tokenId as TokenId,
+        recipientAddress,
+      );
+    }
     const formattedRecipientAccount = `0x${Buffer.from(
       arrayify(destContext.formatAddress(recipientAccount)),
     ).toString('hex')}`;

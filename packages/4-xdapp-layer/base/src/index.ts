@@ -10,20 +10,23 @@ export type {
   ChainContracts as TestnetChainContracts,
   TESTNET_CHAINS,
 } from './config/TESTNET';
-
-export * from './types';
-export * from './vaa';
 export * from './config/MAINNET';
-export * from './explorer';
-export * from './utils';
 export const CONFIG = {
   MAINNET: MAINNET_CONFIG,
   TESTNET: TESTNET_CONFIG,
 };
 
+export * from './wormhole';
+export * from './types';
+export * from './explorer';
+export * from './utils';
+
 export { RelayerAbstract } from './abstracts/relayer';
 export { ContractsAbstract } from './abstracts/contracts';
 export { TokenBridgeAbstract } from './abstracts/tokenBridge';
+export { SolanaAbstract } from './abstracts/contexts/solana';
+export { SeiAbstract } from './abstracts/contexts/sei';
+
 export * from './abis/TokenBridgeRelayer';
 export * from './abis/TokenBridgeRelayer__factory';
 export const SolanaContracts = {

@@ -15,6 +15,7 @@ import {
   hexToUint8Array,
   parseTokenTransferPayload,
   TokenBridgeAbstract,
+  MAINNET_CHAINS,
 } from '@wormhole-foundation/sdk-base';
 import { AptosContracts } from './contracts';
 import {
@@ -62,20 +63,20 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
 
     let recipientAccount = recipientAddress;
     // get token account for solana
-    // TODO: handle solana
-    // if (recipientChainId === MAINNET_CHAINS.solana) {
-    //   let tokenId = token;
-    //   if (token === NATIVE) {
-    //     tokenId = {
-    //       address: APTOS_COIN,
-    //       chain: 'aptos',
-    //     };
-    //   }
-    //   const account = await (
-    //     destContext as SolanaContext
-    //   ).getAssociatedTokenAddress(tokenId as TokenId, recipientAddress);
-    //   recipientAccount = account.toString();
-    // }
+    if (recipientChainId === MAINNET_CHAINS.solana) {
+      let tokenId = token;
+      if (token === NATIVE) {
+        tokenId = {
+          address: APTOS_COIN,
+          chain: 'aptos',
+        };
+      }
+      recipientAccount = await this.context.getSolanaRecipientAddress(
+        recipientChain,
+        tokenId as TokenId,
+        recipientAddress,
+      );
+    }
     const formattedRecipientAccount = arrayify(
       destContext.formatAddress(recipientAccount),
     );

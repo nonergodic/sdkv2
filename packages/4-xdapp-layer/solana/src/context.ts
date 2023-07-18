@@ -41,6 +41,7 @@ import {
   Wormhole,
   TokenBridgeAbstract,
   createNonce,
+  SolanaAbstract,
 } from '@wormhole-foundation/sdk-base';
 
 import { SolContracts } from './contracts';
@@ -73,14 +74,15 @@ const SOLANA_TESTNET_EMITTER_ID =
 /**
  * @category Solana
  */
-export class SolanaContext extends TokenBridgeAbstract<Transaction> {
+export class SolanaContext
+  implements TokenBridgeAbstract<Transaction>, SolanaAbstract
+{
   readonly type = Context.SOLANA;
   readonly contracts: SolContracts;
   readonly context: Wormhole;
   connection: Connection | undefined;
 
   constructor(context: Wormhole) {
-    super();
     this.context = context;
     const tag = context.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
     this.connection = new Connection(

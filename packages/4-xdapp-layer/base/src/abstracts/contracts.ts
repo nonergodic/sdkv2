@@ -1,4 +1,5 @@
-import { ChainName, ChainId, Wormhole } from '../types';
+import { ChainName, ChainId } from '../types';
+import { Wormhole } from '../wormhole';
 
 /**
  * @abstract

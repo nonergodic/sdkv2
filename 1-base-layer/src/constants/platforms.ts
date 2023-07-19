@@ -2,37 +2,43 @@
 // ChainType, ChainFamily, or just Family?
 
 import { Chain } from "./chains";
-import { reverseArrayMapping } from "../utils/mapping";
+import {
+  extractTupleElementFromConstTupleArray,
+  constArrayToConstMapping,
+  reverseArrayMapping
+} from "../utils/mapping";
 
-export const platformToChainsMapping = {
-  Evm: [
-    "Ethereum", "Bsc", "Polygon", "Avalanche", "Oasis", "Aurora", "Fantom", "Karura", "Acala",
-    "Klaytn", "Celo", "Moonbeam", "Neon", "Arbitrum", "Optimism" , "Gnosis", "Base", "Sepolia",
-  ] satisfies readonly Chain[],
-  Solana: ["Solana", "Pythnet"] satisfies readonly Chain[],
-  Cosmwasm: ["Terra", "Terra2", "Injective", "Xpla", "Sei"] satisfies readonly Chain[],
-  Btc: ["Btc"] satisfies readonly Chain[],
+const platformAndChainsEntries = [
+  ["Evm",
+    [
+      "Ethereum", "Bsc", "Polygon", "Avalanche", "Oasis", "Aurora", "Fantom", "Karura", "Acala",
+      "Klaytn", "Celo", "Moonbeam", "Neon", "Arbitrum", "Optimism" , "Gnosis", "Base", "Sepolia",
+    ]
+  ],
+  ["Solana", ["Solana", "Pythnet"]],
+  ["Cosmwasm", ["Terra", "Terra2", "Injective", "Xpla", "Sei"]],
+  ["Btc", ["Btc"]],
   //TODO don't know if any of the following chains actually share a platform with any other chain
-  Algorand: ["Algorand"] satisfies readonly Chain[],
-  Sui: ["Sui"] satisfies readonly Chain[],
-  Aptos: ["Aptos"] satisfies readonly Chain[],
-  Osmosis: ["Osmosis"] satisfies readonly Chain[],
-  Wormchain: ["Wormchain"] satisfies readonly Chain[],
-  Near: ["Near"] satisfies readonly Chain[],
-} as const;
+  ["Algorand", ["Algorand"]],
+  ["Sui", ["Sui"]],
+  ["Aptos", ["Aptos"]],
+  ["Osmosis", ["Osmosis"]],
+  ["Wormchain", ["Wormchain"]],
+  ["Near", ["Near"]],
+] as const satisfies readonly (readonly [string, readonly Chain[]])[];
 
-export const ChainToPlatformMapping = reverseArrayMapping(platformToChainsMapping);
+export const platforms = extractTupleElementFromConstTupleArray(platformAndChainsEntries, 0);
+export type Platform = typeof platforms[number];
 
-export type Platform = keyof typeof platformToChainsMapping;
+export const platformToChainsMapping = constArrayToConstMapping(platformAndChainsEntries);
+export const chainToPlatformMapping = reverseArrayMapping(platformToChainsMapping);
 
-export type ToPlatform<C extends Chain> = typeof ChainToPlatformMapping[C];
+export type ToPlatform<C extends Chain> = typeof chainToPlatformMapping[C];
+export const toPlatform = (chain: Chain) => chainToPlatformMapping[chain];
 
-export const toPlatform = (chain: Chain) =>
-  ChainToPlatformMapping[chain];
-
-export const inPlatform = (chain: Chain, platform: Platform): boolean =>
-  (platformToChainsMapping[platform] as readonly Chain[]).includes(chain);
-
+export const inPlatform = (chain: Chain, platform: Platform):
+  chain is typeof platformToChainsMapping[typeof platform][number] =>
+  chain in platformToChainsMapping[platform];
 //TODO platform specific functions, e.g.:
 //  evm chain id <-> (Chain, Network)
 //  Solana genesis block <-> (Chain, Network)

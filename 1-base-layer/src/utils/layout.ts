@@ -1,3 +1,14 @@
+//TODO:
+// * implement a method that total size of a layout, assuming all items have known size
+// * implement a method that determines the offsets items in a layout (if all preceding items have
+//     have known, fixed size (i.e. no arrays))
+// * leverage the above to implement deserialization of just a set of fields of a layout
+// * implement a method that takes several layouts and a serialized piece of data and quickly
+//     determines which layouts this payload conforms to (might be 0 or even all!). Should leerage
+//     the above methods and fixed values in the layout to quickly exclude candidates.
+// * implement a method that allows "raw" serialization and deserialization" i.e. that skips all the
+//     custom conversions (should only be used for testing!)
+
 type PrimitiveTypesMapping = {
   number: number,
   bigint: bigint,
@@ -107,6 +118,7 @@ export type FixedItems<T extends readonly LayoutItem[]> =
 export type DynamicItems<T extends readonly LayoutItem[]> =
   Omit<LayoutToType<T>, keyof FixedItems<T>>;
 
+//TODO does the const type parameter here actually do anything?
 export const fixedItems = <const T extends readonly LayoutItem[]>(layout: T): FixedItems<T> =>
   layout.reduce((acc: any, item: any) =>
     item["custom"] !== undefined &&

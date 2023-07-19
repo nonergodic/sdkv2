@@ -26,7 +26,7 @@
  *   current naming "conventions" 
  */
 
-export const modules = ["Core", "TokenBridge", "NFTBridge", "WormholeRelayer"] as const;
+export const modules = ["CoreBridge", "TokenBridge", "NftBridge", "Relayer"] as const;
 export type Module = typeof modules[number];
 export const isModule = (module: string): module is Module =>
   modules.includes(module as Module);

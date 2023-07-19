@@ -13,7 +13,7 @@
     "rootDir": "./src",
     "outDir": "./bin",
     "composite": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   },
   "include": [
     "src/*.ts",

@@ -23,16 +23,9 @@
     "coverage": "npm run coverage --workspaces --if-present"
   },
   "workspaces": [
-    "1-base-layer",
-    "2-definition-layer",
-    "3-platform-layer/*",
-    "4-xdapp-layer/*",
-    "packages/4-xdapp-layer/base",
-    "packages/4-xdapp-layer/evm",
-    "packages/4-xdapp-layer/solana",
-    "packages/4-xdapp-layer/aptos",
-    "packages/4-xdapp-layer/sui",
-    "packages/4-xdapp-layer/sei",
-    "packages/4-xdapp-layer/sdk"
+    "packages/1-base-layer",
+    "packages/2-definition-layer",
+    "packages/3-platform-layer/*",
+    "packages/4-xdapp-layer/*"
   ]
 }

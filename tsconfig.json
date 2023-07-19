@@ -9,27 +9,27 @@
     "esModuleInterop": true,
     "strict": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
+    "moduleResolution": "node"
   },
   "references": [
     {
-      "path": "./packages/4-base-layer/base",
+      "path": "./packages/4-xdapp-layer/base",
     },
     {
-      "path": "./packages/4-base-layer/evm",
+      "path": "./packages/4-xdapp-layer/evm",
     },
     {
-      "path": "./packages/4-base-layer/solana",
+      "path": "./packages/4-xdapp-layer/solana",
     },
     {
-      "path": "./packages/4-base-layer/sui",
+      "path": "./packages/4-xdapp-layer/sui",
     },
     {
-      "path": "./packages/4-base-layer/sei",
+      "path": "./packages/4-xdapp-layer/sei",
     },
     {
-      "path": "./packages/4-base-layer/aptos",
-    },
+      "path": "./packages/4-xdapp-layer/aptos",
+    }
   ],
   "files": [
     "packages/index.ts",
@@ -45,6 +45,6 @@
     "packages/4-xdapp-layer/sei/*.ts",
     "packages/4-xdapp-layer/sei/**/*.ts",
     "packages/4-xdapp-layer/aptos/*.ts",
-    "packages/4-xdapp-layer/aptos/**/*.ts",
+    "packages/4-xdapp-layer/aptos/**/*.ts"
   ]
 }

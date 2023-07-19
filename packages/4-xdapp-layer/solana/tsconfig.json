@@ -2,7 +2,7 @@
   "compilerOptions": {
     "incremental": true,
     "target": "es2022",
-    "module": "commonjs",
+    "module": "CommonJS",
     "declaration": true,
     "sourceMap": true,
     "strict": true,
@@ -10,9 +10,14 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./bin",
     "composite": true,
-    "resolveJsonModule": true,
+    "resolveJsonModule": true
   },
+  "include": [
+    "src/*.ts",
+    "src/**/*.ts",
+    "buffer-layout.d.ts"
+  ]
 }

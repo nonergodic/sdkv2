@@ -26,6 +26,7 @@
     "packages/1-base-layer",
     "packages/2-definition-layer",
     "packages/3-platform-layer/*",
-    "packages/4-xdapp-layer/*"
+    "packages/4-xdapp-layer/*",
+    "packages/examples"
   ]
 }

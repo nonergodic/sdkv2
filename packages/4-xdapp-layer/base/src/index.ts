@@ -10,6 +10,7 @@ export type {
   ChainContracts as TestnetChainContracts,
   TESTNET_CHAINS,
 } from './config/TESTNET';
+
 export * from './config/MAINNET';
 export const CONFIG = {
   MAINNET: MAINNET_CONFIG,

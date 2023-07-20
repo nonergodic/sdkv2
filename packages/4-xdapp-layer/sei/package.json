@@ -6,6 +6,7 @@
   "version":"0.1.0-beta",
   "author": "",
   "description": "",
+  "main": "bin/index.js",
   "engines": {
     "node": ">=16",
     "pnpm": ">=7"
@@ -24,7 +25,7 @@
   },
   "scripts": {
     "build": "tsc --build",
-    "clean": "rm -rf bin",
+    "clean": "rm -rf bin && rm tsconfig.tsbuildinfo",
     "lint": "npm run prettier && eslint --fix",
     "prettier": "prettier --write ./src"
   },

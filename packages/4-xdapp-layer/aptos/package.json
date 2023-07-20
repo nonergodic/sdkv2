@@ -25,7 +25,7 @@
   },
   "scripts": {
     "build": "tsc --build",
-    "clean": "rm -rf bin",
+    "clean": "rm -rf bin && rm tsconfig.tsbuildinfo",
     "lint": "npm run prettier && eslint --fix",
     "prettier": "prettier --write ./src"
   },

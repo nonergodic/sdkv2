@@ -71,6 +71,12 @@ function getEthSigner(provider: ethers.providers.Provider): ethers.Wallet {
       instructions: tx.instructions,
     }).compileToV0Message()
   );
+
+  tx.signatures.forEach((sig) => {
+    if (sig.signature !== null)
+      txn.addSignature(sig.publicKey, new Uint8Array(sig.signature));
+  });
+
   txn.sign([solSigner]);
   console.log(txn);
 

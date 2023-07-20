@@ -4,7 +4,7 @@
   "repository": "https://github.com/nonergodic/sdkv2",
   "license": "Apache-2.0",
   "version": "0.1.0-beta",
-  "main": "bin/src/index.js",
+  "main": "bin/index.js",
   "author": "",
   "description": "",
   "engines": {
@@ -24,7 +24,7 @@
   },
   "scripts": {
     "build": "tsc --build",
-    "clean": "rm -rf bin",
+    "clean": "rm -rf bin && rm tsconfig.tsbuildinfo",
     "lint": "npm run prettier && eslint --fix",
     "prettier": "prettier --write ./src"
   },

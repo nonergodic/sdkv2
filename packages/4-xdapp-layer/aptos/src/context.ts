@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers';
 import { sha3_256 } from 'js-sha3';
 import { arrayify, hexlify, stripZeros, zeroPad } from 'ethers/lib/utils';
-import { AptosClient, CoinClient, Types } from 'aptos';
+import { ApiError, AptosClient, CoinClient, Types } from 'aptos';
 import {
   TokenId,
   ParsedRelayerMessage,
@@ -271,7 +271,7 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
       return BigNumber.from(balance);
     } catch (e: any) {
       if (
-        (e instanceof Types.ApiError || e.errorCode === 'resource_not_found') &&
+        (e instanceof ApiError || e.errorCode === 'resource_not_found') &&
         e.status === 404
       ) {
         return BigNumber.from(0);

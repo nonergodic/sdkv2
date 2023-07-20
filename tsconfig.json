@@ -13,38 +13,22 @@
   },
   "references": [
     {
-      "path": "./packages/4-xdapp-layer/base",
+      "path": "./packages/4-xdapp-layer/base"
     },
     {
-      "path": "./packages/4-xdapp-layer/evm",
+      "path": "./packages/4-xdapp-layer/evm"
     },
     {
-      "path": "./packages/4-xdapp-layer/solana",
+      "path": "./packages/4-xdapp-layer/solana"
     },
     {
-      "path": "./packages/4-xdapp-layer/sui",
+      "path": "./packages/4-xdapp-layer/sui"
     },
     {
-      "path": "./packages/4-xdapp-layer/sei",
+      "path": "./packages/4-xdapp-layer/sei"
     },
     {
-      "path": "./packages/4-xdapp-layer/aptos",
+      "path": "./packages/4-xdapp-layer/aptos"
     }
-  ],
-  "files": [
-    "packages/index.ts",
-    "packages/4-xdapp-layer/base/*.ts",
-    "packages/4-xdapp-layer/base/**/*.ts",
-    "packages/4-xdapp-layer/evm/*.ts",
-    "packages/4-xdapp-layer/evm/**/*.ts",
-    "packages/4-xdapp-layer/solana/*.ts",
-    "packages/4-xdapp-layer/solana/**/*.ts",
-    "packages/4-xdapp-layer/solana/**/**/*.ts",
-    "packages/4-xdapp-layer/sui/*.ts",
-    "packages/4-xdapp-layer/sui/**/*.ts",
-    "packages/4-xdapp-layer/sei/*.ts",
-    "packages/4-xdapp-layer/sei/**/*.ts",
-    "packages/4-xdapp-layer/aptos/*.ts",
-    "packages/4-xdapp-layer/aptos/**/*.ts"
   ]
 }

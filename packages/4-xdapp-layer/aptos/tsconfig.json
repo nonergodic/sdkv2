@@ -10,8 +10,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./bin",
     "composite": true
   },
+  "include": [
+    "src/*.ts",
+    "src/**/*.ts"
+  ]
 }

@@ -25,7 +25,7 @@
   },
   "scripts": {
     "build": "tsc --build",
-    "clean": "pnpm -r run clean",
+    "clean": "rm -rf bin",
     "lint": "npm run prettier && eslint --fix",
     "prettier": "prettier --write ./src",
     "test": "jest",

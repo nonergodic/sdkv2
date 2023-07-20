@@ -1,8 +1,4 @@
-import {
-  extractTupleElementFromConstTupleArray,
-  constArrayToConstMapping,
-  reverseMapping
-} from "../utils/mapping";
+import { unzip, toMapping, reverseMapping } from "../utils/mapping";
 
 //Typescript being the absolute mess that it is has no way to turn the keys of an object that is
 //  declared `as const` into an `as const` array (see:
@@ -49,13 +45,11 @@ const chainsAndChainIdEntries = [
   ["Sepolia", 10002],
  ] as const;
 
-export const chains = extractTupleElementFromConstTupleArray(chainsAndChainIdEntries, 0);
+export const [chains, chainIds] = unzip(chainsAndChainIdEntries);
 export type Chain = typeof chains[number];
-
-export const chainIds = extractTupleElementFromConstTupleArray(chainsAndChainIdEntries, 1);
 export type ChainId = typeof chainIds[number];
 
-export const chainToChainIdMapping = constArrayToConstMapping(chainsAndChainIdEntries);
+export const chainToChainIdMapping = toMapping(chainsAndChainIdEntries);
 export const chainIdToChainMapping = reverseMapping(chainToChainIdMapping);
 
 export const isChain = (chain: string): chain is Chain =>

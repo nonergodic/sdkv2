@@ -2,11 +2,7 @@
 // ChainType, ChainFamily, or just Family?
 
 import { Chain } from "./chains";
-import {
-  extractTupleElementFromConstTupleArray,
-  constArrayToConstMapping,
-  reverseArrayMapping
-} from "../utils/mapping";
+import { column, toMapping, reverseArrayMapping } from "../utils/mapping";
 
 const platformAndChainsEntries = [
   ["Evm",
@@ -15,22 +11,22 @@ const platformAndChainsEntries = [
       "Klaytn", "Celo", "Moonbeam", "Neon", "Arbitrum", "Optimism" , "Gnosis", "Base", "Sepolia",
     ]
   ],
-  ["Solana", ["Solana", "Pythnet"]],
-  ["Cosmwasm", ["Terra", "Terra2", "Injective", "Xpla", "Sei"]],
-  ["Btc", ["Btc"]],
+  ["Solana",    ["Solana", "Pythnet"]],
+  ["Cosmwasm",  ["Terra", "Terra2", "Injective", "Xpla", "Sei"]],
+  ["Btc",       ["Btc"]],
   //TODO don't know if any of the following chains actually share a platform with any other chain
-  ["Algorand", ["Algorand"]],
-  ["Sui", ["Sui"]],
-  ["Aptos", ["Aptos"]],
-  ["Osmosis", ["Osmosis"]],
+  ["Algorand",  ["Algorand"]],
+  ["Sui",       ["Sui"]],
+  ["Aptos",     ["Aptos"]],
+  ["Osmosis",   ["Osmosis"]],
   ["Wormchain", ["Wormchain"]],
-  ["Near", ["Near"]],
+  ["Near",      ["Near"]],
 ] as const satisfies readonly (readonly [string, readonly Chain[]])[];
 
-export const platforms = extractTupleElementFromConstTupleArray(platformAndChainsEntries, 0);
+export const platforms = column(platformAndChainsEntries, 0);
 export type Platform = typeof platforms[number];
 
-export const platformToChainsMapping = constArrayToConstMapping(platformAndChainsEntries);
+export const platformToChainsMapping = toMapping(platformAndChainsEntries);
 export const chainToPlatformMapping = reverseArrayMapping(platformToChainsMapping);
 
 export type ToPlatform<C extends Chain> = typeof chainToPlatformMapping[C];

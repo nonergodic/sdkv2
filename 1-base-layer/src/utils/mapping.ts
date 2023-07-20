@@ -1,81 +1,84 @@
+import { range } from "./array";
+
+//TODO implement both static and runtime equal length checking for all TupleArrays
+type TupleArray = readonly (readonly any[])[]; //TODO should any be unknown here?
+
 type And<T extends readonly boolean[]> = T[number] extends true ? true : false;
-type IndexIsPropertyKeyArray<Arr extends readonly any[], I extends number> =
-  Arr extends readonly [infer M extends readonly any[], ...infer Tail extends readonly any[]]
-  ? [M[I] extends PropertyKey ? true : false, ...IndexIsPropertyKeyArray<Tail, I>]
+type IndexIsTypeArray<TupArr extends TupleArray, Index, Type> =
+TupArr extends readonly [infer A extends readonly any[], ...infer Tail extends readonly any[]]
+  ? ( Index extends keyof A
+    ? [A[Index] extends Type ? true : false, ...IndexIsTypeArray<Tail, Index, Type>]
+    : never
+  )
   : [];
 
-type IndexIsPropertyKey<Arr extends readonly any[], I extends number> =
-  And<IndexIsPropertyKeyArray<Arr, I>>;
+type IndexIsType<Arr extends readonly any[], Index, Type> =
+  And<IndexIsTypeArray<Arr, Index, Type>>;
 
 type DefinedOrDefault<T, D> = undefined extends T ? D : Exclude<T, undefined>;
 
-export const constArrayToConstMapping = <
-  const Arr extends readonly (readonly any[])[],
-  const KeyIndex extends number,
-  const ValIndex extends number,
->(
-  arr: Arr,
-  keyIndex?: KeyIndex,
-  valIndex?: ValIndex,
-) => arr.reduce((acc, entry) => {
-    acc[entry[keyIndex ?? 0]] = entry[valIndex ?? 1];
-    return acc;
-  },
-  {} as any
-) as IndexIsPropertyKey<Arr, DefinedOrDefault<typeof keyIndex, 0>> extends true
-  ? {
-      [E in Arr[number] as E[DefinedOrDefault<typeof keyIndex, 0>]]:
-        E[DefinedOrDefault<typeof valIndex, 1>]
+export type ToMapping<
+  TupArr extends TupleArray,
+  KeyIndex extends number | undefined,
+  ValIndex extends number | undefined,
+> = IndexIsType<TupArr, DefinedOrDefault<ValIndex, 0>, PropertyKey> extends true
+  ? { [E in TupArr[number] as E[DefinedOrDefault<KeyIndex, 0>]]:
+        E[DefinedOrDefault<ValIndex, 1>]
     }
-  : never;
+  : never
 
-export type ExtractTupleElementFromConstTupleArray<
-  TupArr extends readonly (readonly any[])[],
-  Index extends number
-> =
-  TupArr extends readonly [
-    infer Tuple extends readonly any[],
-    ...infer Tail extends readonly any[]
-  ]
-  ? [Tuple[Index], ...ExtractTupleElementFromConstTupleArray<Tail, Index>]
-  : [];
+export const toMapping = <
+  const A extends TupleArray,
+  const K extends number | undefined,
+  const V extends number | undefined,
+>(arr: A, keyIndex?: K, valIndex?: V) =>
+  arr.reduce(
+    (acc, entry) => {
+      acc[entry[keyIndex ?? 0]] = entry[valIndex ?? 1];
+      return acc;
+    },
+    {} as any
+  ) as ToMapping<A, K, V>;
 
-export const extractTupleElementFromConstTupleArray = <
-  const TupArr extends readonly (readonly any[])[],
+export type Column<TupArr extends TupleArray, Index> =
+  { [K in keyof TupArr]: Index extends keyof TupArr[K] ? TupArr[K][Index] : never };
+
+export const column = <
+  const TupArr extends TupleArray,
   const Index extends number,
 >(tupArr: TupArr, index: Index) =>
-  tupArr.map((tuple) => tuple[index]) as ExtractTupleElementFromConstTupleArray<TupArr, Index>;
+  tupArr.map((tuple) => tuple[index]) as Column<TupArr, Index>;
 
-export type ReverseRecord<T extends Record<keyof T, any>> = {
-  [V in T[keyof T]]: {
-    [K in keyof T]: T[K] extends V ? K : never;
-  }[keyof T];
-};
+export type Unzip<TupArr extends TupleArray> =
+  //we use "infer A" here instead of just using TupArr[0] directly, because [K in keyof TupArr[0]]
+  //  also gives us all the object properties (such as length, toString, ...) that we don't want,
+  //  while using the "infer A" trick gives us only the actual indexes (as string literals)
+  TupArr[0] extends infer A ? { [K in keyof A]: Column<TupArr, K> } : never;
 
-//TODO take another look at this!
+export const unzip = <const A extends TupleArray>(arr: A) =>
+  range(arr[0].length).map(i => column(arr, i)) as unknown as Unzip<A>;
+
+export type Zip<TupArr extends TupleArray> =
+  TupArr[0] extends infer A
+  ? { [K in keyof A]:
+      readonly [...{ [K2 in keyof TupArr]: K extends keyof TupArr[K2] ? TupArr[K2][K] : never }]
+    }
+  : never
+
+export const zip = <const Args extends TupleArray>(...arr: readonly [...Args]) =>
+  range(arr[0].length).map(col =>
+    range(arr.length).map(row => arr[row][col])
+  ) as unknown as Zip<Args>;
+
+export type ReverseRecord<T extends Record<PropertyKey, any>> =
+  { [V in T[keyof T]]: { [K in keyof T]: T[K] extends V ? K : never }[keyof T] }
+
 export const [reverseMapping, reverseArrayMapping] = (() => {
-  //tried combining these two functions into one and maintaining specific type information via:
-  //  <T extends Record<PropertyKey, PropertyKey | readonly PropertyKey[]>>(obj: T) =>
-  //    Object.entries(obj).reduce(
-  //      (acc, [key, value]) => {
-  //        const set = (v: PropertyKey) => {acc[v] = key;};
-  //        Array.isArray(value) ? value.forEach(set) : set(value);
-  //        return acc;
-  //      },
-  //      {} as any
-  //  ) as { [K in keyof T as T[K] extends PropertyKey[] ? T[K][number] : T[K]]: K };
-  //
-  //But Typescript really wasn't cooperating in any way (the last line is illegal and then there's
-  //  also the entire issue (known since 2017) of Array.isArray erroneously narrowing to any[]
-  //  for readonly arrays...)
-  //One could get a single function by sacrificing the specificity via
-  //  Object.entries(obj).reduce<Record<PropertyKey, PropertyKey>>
-  //  but that's a bad trade-off
-
+  //TODO take another look at this! - pretty sure this can be improved/combined
   const checkAndSet = (acc: any, key: PropertyKey, value: PropertyKey): void => {
     if (acc[key] !== undefined)
       throw new Error(
-        `Mapping can't be uniquely inverted: ` + 
+        `Mapping can't be uniquely inverted: ` +
         `key ${String(key)} has at least two values: ${acc[key]} and ${String(value)}}`
       );
     acc[key] = value;
@@ -90,7 +93,7 @@ export const [reverseMapping, reverseArrayMapping] = (() => {
         },
         {} as any
       ) as { [K in keyof T as T[K]]: K },
-    
+
     <T extends Record<PropertyKey, readonly PropertyKey[]>>(obj: T) =>
       Object.entries(obj).reduce(
         (acc, [key, array]) => {

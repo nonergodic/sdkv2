@@ -12,3 +12,5 @@
 //     isArray<T>(arg: T): arg is ArrayType<T>;
 //   }
 // }
+
+export const range = (length: number) => [...Array(length).keys()];

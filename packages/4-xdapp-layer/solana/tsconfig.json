@@ -1,23 +1,12 @@
 {
+  "extends":"../../../tsconfig.cjs.json",
   "compilerOptions": {
-    "incremental": true,
-    "target": "es2022",
-    "module": "CommonJS",
-    "declaration": true,
-    "sourceMap": true,
-    "strict": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "rootDir": "./",
-    "outDir": "./bin",
-    "composite": true,
-    "resolveJsonModule": true
+    "outDir":"bin"
   },
   "include": [
+    "*.d.ts",
     "src/*.ts",
     "src/**/*.ts",
-    "buffer-layout.d.ts"
+    "src/**/**/*.ts"
   ]
 }

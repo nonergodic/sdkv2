@@ -1,20 +1,10 @@
 {
+  "extends":"../../../tsconfig.cjs.json",
   "compilerOptions": {
-    "incremental": true,
-    "target": "es2019",
-    "module": "commonjs",
-    "declaration": true,
-    "sourceMap": true,
-    "strict": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "rootDir": "./",
-    "outDir": "./bin",
-    "composite": true
+    "outDir":"bin",
+    "lib": ["DOM"]
   },
-  "include":[
+  "include": [
     "src/*.ts"
   ]
 }

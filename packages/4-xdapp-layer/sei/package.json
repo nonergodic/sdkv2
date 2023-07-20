@@ -1,8 +1,11 @@
 {
   "private": true,
   "name": "@wormhole-foundation/sdk-sei",
-  "repository": "",
+  "repository": "https://github.com/nonergodic/sdkv2",
   "license": "Apache-2.0",
+  "version":"0.1.0-beta",
+  "author": "",
+  "description": "",
   "engines": {
     "node": ">=16",
     "pnpm": ">=7"

@@ -28,7 +28,7 @@
     "lint": "npm run prettier && eslint --fix",
     "prettier": "prettier --write ./src"
   },
-  "dependencies": {
+  "peerDependencies": {
     "@mysten/sui.js": "^0.37.1",
     "ethers": "^5.7.2"
   }

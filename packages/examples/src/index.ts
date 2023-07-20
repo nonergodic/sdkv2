@@ -12,7 +12,7 @@ import { ethers } from "ethers";
 import * as wh from "@wormhole-foundation/sdk-base";
 import * as sol from "@wormhole-foundation/sdk-solana";
 import * as evm from "@wormhole-foundation/sdk-evm";
-//import * as sui from '@wormhole-foundation/sdk-sui';
+import * as sui from "@wormhole-foundation/sdk-sui";
 
 // Please don't steal my testnet moneys
 function getSolanaSigner(): Keypair {
@@ -35,17 +35,17 @@ function getEthSigner(provider: ethers.providers.Provider): ethers.Wallet {
     // can we just pass a list of these and create the object in the constructor?
     [wh.Context.SOLANA]: new sol.SolanaContext(wh.Network.TESTNET),
     [wh.Context.EVM]: new evm.EvmContext(wh.Network.TESTNET),
-    // complains about some dep required by mysten
-    //[wh.Context.SUI]: new sui.SuiContext(wh.Network.TESTNET),
+    [wh.Context.SUI]: new sui.SuiContext(wh.Network.TESTNET),
   });
 
   // TODO: getContext returns untyped, can it return the correct context type?
   const solc = w.getContext("solana") as sol.SolanaContext;
   const solConn = solc.connection;
 
-  // TODO: No connection attribute on evm context
+  // TODO: No connection attribute on EvmContext?
   const ethConn = w.mustGetProvider("goerli");
 
+  // TODO: consistent signer interface?
   const ethSigner = getEthSigner(ethConn);
   const solSigner = getSolanaSigner();
 
@@ -57,7 +57,6 @@ function getEthSigner(provider: ethers.providers.Provider): ethers.Wallet {
     // both the chain and a fn to get the address?
     "solana",
     solSigner.publicKey.toBase58(),
-    // same
     "goerli",
     ethSigner.address
   )) as Transaction;
@@ -72,14 +71,14 @@ function getEthSigner(provider: ethers.providers.Provider): ethers.Wallet {
     }).compileToV0Message()
   );
 
+  txn.sign([solSigner]);
   tx.signatures.forEach((sig) => {
     if (sig.signature !== null)
       txn.addSignature(sig.publicKey, new Uint8Array(sig.signature));
   });
 
-  txn.sign([solSigner]);
   console.log(txn);
 
-  const x = await solConn?.sendTransaction(txn);
-  console.log(x);
+  //const x = await solConn?.sendTransaction(txn);
+  //console.log(x);
 })();

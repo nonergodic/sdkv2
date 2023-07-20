@@ -1,7 +1,7 @@
 {
   "extends":"../../tsconfig.cjs.json",
   "compilerOptions": {
-    "lib": ["es2020", "DOM"],
+    "lib": ["DOM"],
     "rootDir": "src",
     "outDir": "bin"
   }

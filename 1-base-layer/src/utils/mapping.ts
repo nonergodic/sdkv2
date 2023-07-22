@@ -1,28 +1,17 @@
+//everything in here is really just a band-aid/cover for the fact that TypeScript (despite having
+// capital T type in its name) lacks support for higher-order type functions.
 import { range } from "./array";
+import { DefinedOrDefault, IndexIsType } from "./metaprogramming";
 
 //TODO implement both static and runtime equal length checking for all TupleArrays
 type TupleArray = readonly (readonly any[])[]; //TODO should any be unknown here?
 
-type And<T extends readonly boolean[]> = T[number] extends true ? true : false;
-type IndexIsTypeArray<TupArr extends TupleArray, Index, Type> =
-TupArr extends readonly [infer A extends readonly any[], ...infer Tail extends readonly any[]]
-  ? ( Index extends keyof A
-    ? [A[Index] extends Type ? true : false, ...IndexIsTypeArray<Tail, Index, Type>]
-    : never
-  )
-  : [];
-
-type IndexIsType<Arr extends readonly any[], Index, Type> =
-  And<IndexIsTypeArray<Arr, Index, Type>>;
-
-type DefinedOrDefault<T, D> = undefined extends T ? D : Exclude<T, undefined>;
-
 export type ToMapping<
   TupArr extends TupleArray,
-  KeyIndex extends number | undefined,
-  ValIndex extends number | undefined,
-> = IndexIsType<TupArr, DefinedOrDefault<ValIndex, 0>, PropertyKey> extends true
-  ? { [E in TupArr[number] as E[DefinedOrDefault<KeyIndex, 0>]]:
+  KeyIndex extends number | undefined = 0,
+  ValIndex extends number | undefined = 1,
+> = IndexIsType<TupArr, DefinedOrDefault<KeyIndex, 0>, PropertyKey> extends true
+  ? { readonly [E in TupArr[number] as E[DefinedOrDefault<KeyIndex, 0>]]:
         E[DefinedOrDefault<ValIndex, 1>]
     }
   : never

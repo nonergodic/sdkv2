@@ -173,14 +173,14 @@ export function deserializeLayout<T extends Layout>(
   encoded: Uint8Array,
   offset?: number,
   consumeAll?: false,
-): [LayoutToType<T>, number];
+): readonly [LayoutToType<T>, number];
 
 export function deserializeLayout<T extends Layout>(
   layout: T,
   encoded: Uint8Array,
   offset = 0,
   consumeAll = true,
-): LayoutToType<T> | [LayoutToType<T>, number] {
+): LayoutToType<T> | readonly [LayoutToType<T>, number] {
   let decoded = {} as any;
   for (const item of layout)
     [decoded[item.name], offset] = deserializeLayoutItem(item, encoded, offset);
@@ -283,53 +283,59 @@ function serializeLayoutItem(
   encoded: Uint8Array,
   offset: number
 ): number {
-  switch (item.binary) {
-    case "array": {
-      //Typescript does not infer the narrowed type of data automatically and retroactively
-      const narrowedData = data as LayoutToType<typeof item>;
-      if (item.size !== undefined)
-        offset = serializeUint(encoded, offset, narrowedData.length, item.size);
-
-      for (let i = 0; i < narrowedData.length; ++i)
-        offset = serializeLayout(item.elements, narrowedData[i], encoded, offset);
-
-      break;
-    }
-    case "bytes": {
-      const narrowedData = data as LayoutToType<typeof item>;
-      const value = (() => {
-        if (item.custom !== undefined && item.custom instanceof Uint8Array) {
-          checkUint8ArrayDeeplyEqual(item.custom, narrowedData)
-          return narrowedData;
-        }
-
-        const ret = item.custom !== undefined ? item.custom.from(narrowedData) : narrowedData;
+  try {
+    switch (item.binary) {
+      case "array": {
+        //Typescript does not infer the narrowed type of data automatically and retroactively
+        const narrowedData = data as LayoutToType<typeof item>;
         if (item.size !== undefined)
-          checkUint8ArraySize(ret, item.size);
+          offset = serializeUint(encoded, offset, narrowedData.length, item.size);
 
-        return ret;
-      })();
+        for (let i = 0; i < narrowedData.length; ++i)
+          offset = serializeLayout(item.elements, narrowedData[i], encoded, offset);
 
-      encoded.set(value, offset);
-      offset += value.length;
-      break;
+        break;
+      }
+      case "bytes": {
+        const narrowedData = data as LayoutToType<typeof item>;
+        const value = (() => {
+          if (item.custom !== undefined && item.custom instanceof Uint8Array) {
+            checkUint8ArrayDeeplyEqual(item.custom, narrowedData)
+            return narrowedData;
+          }
+
+          const ret = item.custom !== undefined ? item.custom.from(narrowedData) : narrowedData;
+          if (item.size !== undefined)
+            checkUint8ArraySize(ret, item.size);
+
+          return ret;
+        })();
+
+        encoded.set(value, offset);
+        offset += value.length;
+        break;
+      }
+      case "uint": {
+        const narrowedData = data as LayoutToType<typeof item>;
+        const value = (() => {
+          if ( item.custom !== undefined &&
+              (typeof item.custom == "number" || typeof item.custom === "bigint")
+            ) {
+            checkUintEquals(item.custom, narrowedData);
+            return narrowedData;
+          }
+
+          return item.custom !== undefined ? item.custom.from(narrowedData) : narrowedData;
+        })();
+
+        offset = serializeUint(encoded, offset, value, item.size);
+        break;
+      }
     }
-    case "uint": {
-      const narrowedData = data as LayoutToType<typeof item>;
-      const value = (() => {
-        if ( item.custom !== undefined &&
-             (typeof item.custom == "number" || typeof item.custom === "bigint")
-          ) {
-          checkUintEquals(item.custom, narrowedData);
-          return narrowedData;
-        }
-
-        return item.custom !== undefined ? item.custom.from(narrowedData) : narrowedData;
-      })();
-
-      offset = serializeUint(encoded, offset, value, item.size);
-      break;
-    }
+  }
+  catch (e) {
+    (e as Error).message = `when serializing item '${item.name}': ${(e as Error).message}`;
+    throw e;
   }
   return offset;
 };
@@ -348,66 +354,80 @@ function updateOffset (
   return newOffset;
 }
 
-function deserializeUint(
+function deserializeUint<S extends number>(
   encoded: Uint8Array,
   offset: number,
-  size: number
-): [number | bigint, number] {
+  size: S,
+): readonly [S extends NumberSize ? number : bigint, number] {
   let value = 0n;
   for (let i = 0; i < size; ++i)
     value += BigInt(encoded[offset + i]) << BigInt((size - 1 - i) * 8);
 
-  return [(size > numberMaxSize) ? value : Number(value), updateOffset(encoded, offset, size)];
+  return [
+    ((size > numberMaxSize) ? value : Number(value)) as S extends NumberSize ? number : bigint,
+    updateOffset(encoded, offset, size)
+  ] as const;
 }
 
 function deserializeLayoutItem(
   item: LayoutItem,
   encoded: Uint8Array,
   offset: number,
-): [LayoutToType<typeof item>, number] {
-  switch (item.binary) {
-    case "array": {
-      let ret = [] as LayoutToType<typeof item.elements>[];
-      if (item.size !== undefined) {
-        const [length, newOffset] = deserializeUint(encoded, offset, item.size) as [number, number];
-        offset = newOffset;
-        for (let i = 0; i < length; ++i)
-          [ret[i], offset] = deserializeLayout(item.elements, encoded, offset, false);
+): readonly [LayoutToType<typeof item>, number] {
+  try {
+    switch (item.binary) {
+      case "array": {
+        let ret = [] as LayoutToType<typeof item.elements>[];
+        if (item.size !== undefined) {
+          const [length, newOffset] = deserializeUint(encoded, offset, item.size) as [number, number];
+          offset = newOffset;
+          for (let i = 0; i < length; ++i)
+            [ret[i], offset] = deserializeLayout(item.elements, encoded, offset, false);
+        }
+        else {
+          while (offset < encoded.length)
+            [ret[ret.length], offset] = deserializeLayout(item.elements, encoded, offset, false);
+        }
+        return [ret, offset];
       }
-      else {
-        while (offset < encoded.length)
-          [ret[ret.length], offset] = deserializeLayout(item.elements, encoded, offset, false);
+      case "bytes": {
+        let newOffset;
+        if (item.size !== undefined)
+          newOffset = updateOffset(encoded, offset, item.size);
+        else if (item.custom !== undefined && item.custom instanceof Uint8Array)
+          newOffset = offset + item.custom.length;
+        else
+          newOffset = encoded.length;
+
+        const value = encoded.slice(offset, newOffset);
+        if (item.custom !== undefined && item.custom instanceof Uint8Array) {
+          checkUint8ArrayDeeplyEqual(item.custom, value);
+          return [value, newOffset];
+        }
+
+        return [item.custom !== undefined ? item.custom.to(value) : value, newOffset];
       }
-      return [ret, offset];
+      case "uint": {
+        const [value, newOffset] = deserializeUint(encoded, offset, item.size);
+        if ( item.custom !== undefined &&
+            (typeof item.custom === "number" || typeof item.custom === "bigint")
+        ) {
+          checkUintEquals(item.custom, value);
+
+          return [value, newOffset];
+        }
+
+        return [
+          item.custom !== undefined
+          ? (item.custom as CustomConversion<bigint | number, any>).to(value)
+          : value,
+          newOffset
+        ];
+      }
     }
-    case "bytes": {
-      let newOffset;
-      if (item.size !== undefined)
-        newOffset = updateOffset(encoded, offset, item.size);
-      else if (item.custom !== undefined && item.custom instanceof Uint8Array)
-        newOffset = offset + item.custom.length;
-      else
-        newOffset = encoded.length;
-
-      const value = encoded.slice(offset, newOffset);
-      if (item.custom !== undefined && item.custom instanceof Uint8Array) {
-        checkUint8ArrayDeeplyEqual(item.custom, value);
-        return [value, newOffset];
-      }
-
-      return [item.custom !== undefined ? item.custom.from(value) : value, newOffset];
-    }
-    case "uint": {
-      const [value, newOffset] = deserializeUint(encoded, offset, item.size);
-      if ( item.custom !== undefined &&
-           (typeof item.custom === "number" || typeof item.custom === "bigint")
-       ) {
-        checkUintEquals(item.custom, value);
-
-        return [value, newOffset];
-      }
-
-      return [item.custom !== undefined ? item.custom.from(value) : value, newOffset];
-    }
+  }
+  catch (e) {
+    (e as Error).message = `when deserializing item '${item.name}': ${(e as Error).message}`; 
+    throw e;
   }
 }

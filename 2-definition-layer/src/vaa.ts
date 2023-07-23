@@ -67,9 +67,9 @@ const signatureConversion = {
 } as const satisfies CustomConversion<Uint8Array, Signature>;
 
 const signatureLayout = [
-  { name: "r", binary: "uint", size: 8 },
-  { name: "s", binary: "uint", size: 8 },
-  { name: "v", binary: "uint", size: 1 },
+  { name: "r", binary: "uint", size: 32 },
+  { name: "s", binary: "uint", size: 32 },
+  { name: "v", binary: "uint", size:  1 },
 ] as const satisfies Layout;
 
 const guardianSignatureLayout = [
@@ -168,13 +168,13 @@ export const serialize = <PL extends PayloadLiteral>(
     ...baseLayout,
     descriptionToPayloadLayoutItem(getPayloadDescription(vaa.payloadLiteral)),
   ];
-  return serializeLayout(layout, vaa as unknown as LayoutToType<typeof layout>);
+  return serializeLayout(layout, vaa as LayoutToType<typeof layout>);
 }
 
 export function deserialize<PL extends PayloadLiteral>(
   payloadLiteral: PL,
   data: Uint8Array | string,
-): VAA<PayloadLiteral> {
+): VAA<PL> {
   if (typeof data === "string")
     data = hexByteStringToUint8Array(data);
 
@@ -189,7 +189,7 @@ export function deserialize<PL extends PayloadLiteral>(
   const body = deserializeLayout(bodyLayout(payloadLiteral), data, bodyOffset);
   const hash = keccak_256(data.slice(bodyOffset));
 
-  return { payloadLiteral, ...header, ...body, hash } as unknown as VAA<PayloadLiteral>;
+  return { payloadLiteral, ...header, ...body, hash } as VAA<PL>;
 }
 
 payloadFactory.set("Uint8Array", uint8ArrayConversion);

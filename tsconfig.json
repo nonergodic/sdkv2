@@ -2,12 +2,20 @@
   "compilerOptions": {
     "types": ["mocha", "chai"],
     "typeRoots": ["./node_modules/@types"],
-    "lib": ["es2020"],
+    "lib": ["es2022"],
     "module": "CommonJS",
-    "target": "es2020",
+    "target": "es2022",
     "esModuleInterop": true,
     "strict": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node"
-  }
+    "moduleResolution": "node",
+    "noEmit": true
+  },
+  "include": [
+    "1-base-layer/src/**/*.ts",
+    "2-definition-layer/src/**/*.ts",
+    "3-platform-layer/src/**/*.ts",
+    "4-application-layer/src/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
 }

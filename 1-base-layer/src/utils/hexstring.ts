@@ -46,10 +46,10 @@ export const hexByteStringToUint8Array = (str: string): Uint8Array => {
   if (str.length % 2 !== 0)
     throw new Error(`hex byte string has odd length: ${str}`);
   
-  const ret = new Uint8Array(str.length / 2);
-  let i = str.length > 2 && str[1] === "x" ? 2 : 0;
-  for (; i < str.length; i += 2)
-    ret[i / 2] = 
+  const prefixOffset = str.length > 2 && str[1] === "x" ? 2 : 0;
+  const ret = new Uint8Array((str.length - prefixOffset) / 2);
+  for (let i = prefixOffset; i < str.length; i += 2)
+    ret[(i - prefixOffset) / 2] = 
       asciiHexCharToNumber(str, i) * 16 +
       asciiHexCharToNumber(str, i + 1);
   

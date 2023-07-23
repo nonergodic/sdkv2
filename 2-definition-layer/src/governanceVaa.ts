@@ -9,6 +9,7 @@ import {
   Layout,
   Flatten,
   ConcatStringLiterals,
+  zip
 } from "wormhole-base";
 
 import { chainConversion, universalAddressConversion } from "./layout-conversions";
@@ -122,20 +123,19 @@ const moduleToActionToNumTuples = [
 const [actionToNumMapping, numToActionMapping, moduleActions] = (() => {
   //that's what you get when your insane programming language doesn't support higher order functions
   //  on types...
-  const moduleToActionTuplesMapping = toMapping(moduleToActionToNumTuples);
-  return modules.map((module) => [
-      { [module]: toMapping(moduleToActionTuplesMapping[module]) },
-      { [module]: toMapping(moduleToActionTuplesMapping[module], 1, 0) },
-      { [module]: moduleToActionTuplesMapping[module].map((action) => action[0]) },
-    ]) as unknown as [
-      { readonly [M in Module]: ToMapping<typeof moduleToActionTuplesMapping[M]> },
-      { readonly [M in Module]: ToMapping<typeof moduleToActionTuplesMapping[M], 1, 0> },
+  const moduleToActionTuple = toMapping(moduleToActionToNumTuples);
+  return [
+    toMapping(modules.map((module) => [module, toMapping(moduleToActionTuple[module])])) as
+      { readonly [M in Module]: ToMapping<typeof moduleToActionTuple[M]> },
+    toMapping(modules.map((module) => [module, toMapping(moduleToActionTuple[module], 1, 0)])) as
+      { readonly [M in Module]: ToMapping<typeof moduleToActionTuple[M], 1, 0> },
+    toMapping(modules.map((module) => [module, column(moduleToActionTuple[module], 0)])) as
       { readonly [M in Module]:
-          typeof moduleToActionTuplesMapping[M] extends infer A extends readonly any[]
-          ? readonly [...{ [K in keyof A]: A[K][0] }]
-          : never
+        typeof moduleToActionTuple[M] extends infer A extends readonly any[]
+        ? readonly [...{ [K in keyof A]: A[K][0] }]
+        : never
       }
-    ]
+  ];
 })();
 
 type ModuleAction<M extends Module> = typeof moduleActions[M][number];
@@ -151,16 +151,16 @@ const moduleConversion = <const M extends Module>(module: M) => ({
       throw new Error(
         `Expected ascii encoding of ${expected} but got ${bytes} = ${module} instead`
       );
-    
+
     return module;
   },
   from: (_moduleStr: M): Uint8Array => {
     const bytes = new Uint8Array(moduleBytesSize);
     for (let i = 0; i < module.length; ++i)
       bytes[moduleBytesSize - i] = module.charCodeAt(module.length - i);
-    
+
     return bytes;
-  } 
+  }
 }) as const satisfies CustomConversion<Uint8Array, M>;
 
 type ActionNum<M extends Module> = keyof typeof numToActionMapping[M];
@@ -169,12 +169,12 @@ const isActionNum = (module: Module, actionNum: number): actionNum is ActionNum<
 
 const actionConversion = <
   const M extends Module,
-  const A extends ModuleAction<M> 
+  const A extends ModuleAction<M>
 >(module: M, action: A) => ({
   to: (actionNum: number) => {
     if (!isActionNum(module, actionNum))
       throw new Error(`Invalid action ${actionNum} for module ${module}`);
-    
+
     const moduleNumMapping = numToActionMapping[module]
 
     const actionStr = moduleNumMapping[actionNum as keyof typeof moduleNumMapping];
@@ -183,7 +183,7 @@ const actionConversion = <
         `Unexpected action number (${actionNum} = ${actionStr}) for module ${module}: ` +
         `expected ${action} instead`
       );
-    
+
     return action;
   },
   from: (actionStr: A) => {
@@ -192,7 +192,7 @@ const actionConversion = <
         `Invalid action ${actionStr} for module ${module}: ` +
         `expected ${action} instead`
       );
-    
+
     //TODO why is the explict "as number" cast necessary here?
     return actionToNumMapping[module][action] as number;
   }
@@ -209,39 +209,39 @@ export const headerLayout = <
 
 type GovernancePayloadLayouts = Flatten<
   typeof modules extends infer M
-    ? { readonly [I in keyof M]:
-      typeof modules[I] extends keyof typeof moduleActions
-      ? ( typeof moduleActions[typeof modules[I]] extends infer A
-        ? { [J in keyof A]: readonly [
-          ConcatStringLiterals<[
+  ? { readonly [I in keyof M]:
+    typeof modules[I] extends keyof typeof moduleActions
+    ? ( typeof moduleActions[typeof modules[I]] extends infer A
+      ? { [J in keyof A]: readonly [
+        ConcatStringLiterals<[
+          typeof modules[I],
+          typeof moduleActions[typeof modules[I]][J]
+        ]>,
+        Flatten<[
+          ReturnType<typeof headerLayout<
             typeof modules[I],
             typeof moduleActions[typeof modules[I]][J]
-          ]>,
-          Flatten<[
-            ReturnType<typeof headerLayout<
-              typeof modules[I],
-              typeof moduleActions[typeof modules[I]][J]
-            >>,
-            typeof moduleActions[typeof modules[I]][J] extends keyof typeof actionMapping
-            ? typeof actionMapping[typeof moduleActions[typeof modules[I]][J]]["layout"]
-            : never
-          ]>,
-        ] }
-        : never
-      )
+          >>,
+          typeof moduleActions[typeof modules[I]][J] extends keyof typeof actionMapping
+          ? typeof actionMapping[typeof moduleActions[typeof modules[I]][J]]["layout"]
+          : never
+        ]>,
+      ] }
       : never
-    }
+    )
     : never
-  >;
+  }
+  : never
+>;
 
 declare global { namespace Wormhole {
   interface PayloadLiteralToDescriptionMapping extends ToMapping<GovernancePayloadLayouts> {}
 }}
 
-modules.map((module) =>
+modules.map((module) => {
   moduleActions[module].map((action) =>
     registerPayloadType(
       module + action as keyof Wormhole.PayloadLiteralToDescriptionMapping,
       [...headerLayout(module, action), ...actionMapping[action].layout],
     )
-  ));
+  )});

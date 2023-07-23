@@ -156,7 +156,7 @@ export function serializeLayout<T extends Layout>(
 ): Uint8Array | number {
   let ret = encoded ?? new Uint8Array(calcLayoutSize(layout, data));
   for (let i = 0; i < layout.length; ++i)
-    offset = serializeLayoutItem(layout[i], data[i], ret, offset);
+    offset = serializeLayoutItem(layout[i], data[layout[i].name], ret, offset);
 
   return encoded === undefined ? ret : offset;
 }

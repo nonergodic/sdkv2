@@ -88,7 +88,7 @@ export const [reverseMapping, reverseArrayMapping] = (() => {
         (acc, [key, array]) => {
           for (const value of array)
             checkAndSet(acc, value, key);
-          return obj;
+          return acc;
         },
         {} as any
       ) as { [K in keyof T as T[K][number]]: K }

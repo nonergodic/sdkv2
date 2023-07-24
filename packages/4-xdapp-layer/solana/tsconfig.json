@@ -1,18 +1,8 @@
 {
+  "extends": "../../../tsconfig.root.json",
+  "include": ["buffer-layout.d.ts", "./src/*.ts", "./src/**/*.ts", "./src/**/**/*.ts", "./src/**/**/**/*.ts"],
   "compilerOptions": {
-    "incremental": true,
-    "target": "es2022",
-    "module": "commonjs",
-    "declaration": true,
-    "sourceMap": true,
-    "strict": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
     "rootDir": "./src",
-    "outDir": "./bin",
-    "composite": true,
-    "resolveJsonModule": true,
-  },
+    "outDir": "./bin"
+  }
 }

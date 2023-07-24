@@ -140,7 +140,8 @@ const buildExecuteMsg = (
  * @category Sei
  */
 export class SeiContext
-  extends TokenBridgeAbstract<SeiTransaction> implements SeiAbstract
+  extends TokenBridgeAbstract<SeiTransaction>
+  implements SeiAbstract
 {
   readonly type = Context.SEI;
   readonly contracts: SeiContracts;
@@ -240,7 +241,8 @@ export class SeiContext
    * @returns Whether there exists a native denomination created by the translator contract for the given token
    */
   async isTranslatedToken(tokenAddress: string): Promise<boolean> {
-    if (!this.wormhole.conf.rest.sei) throw new Error('Sei rest not configured');
+    if (!this.wormhole.conf.rest.sei)
+      throw new Error('Sei rest not configured');
     const resp = await axios.get(
       `${new URL(
         this.wormhole.conf.rest.sei,

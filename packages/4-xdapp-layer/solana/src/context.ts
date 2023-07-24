@@ -75,7 +75,8 @@ const SOLANA_TESTNET_EMITTER_ID =
  * @category Solana
  */
 export class SolanaContext
-  extends TokenBridgeAbstract<Transaction> implements SolanaAbstract
+  extends TokenBridgeAbstract<Transaction>
+  implements SolanaAbstract
 {
   readonly type = Context.SOLANA;
   readonly contracts: SolContracts;
@@ -85,7 +86,8 @@ export class SolanaContext
   constructor(network: Network, wormholeInstance?: Wormhole) {
     super();
     this.wormhole = wormholeInstance || new Wormhole(network, {});
-    const tag = this.wormhole.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
+    const tag =
+      this.wormhole.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
     this.connection = new Connection(
       this.wormhole.conf.rpcs.solana || clusterApiUrl(tag),
     );

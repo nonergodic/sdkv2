@@ -1,10 +1,26 @@
 {
   "name": "wormhole-solana",
   "version": "0.1.0",
-  "main": "src/index.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "scripts": {
+    "build:cjs": "tsc -p ./tsconfig.cjs.json",
+    "build:esm": "tsc -p ./tsconfig.esm.json",
+    "build": "npm run clean && npm run build:cjs && npm run build:esm",
+    "clean": "rm -rf ./dist"
+  },
   "dependencies": {
+    "@solana/web3.js": "^1.77.3",
     "wormhole-base": "^0.1.0",
-    "wormhole-definitions": "^0.1.0",
-    "@solana/web3.js": "^1.77.3"
+    "wormhole-definitions": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node-fetch": "^2.6.4"
   }
 }

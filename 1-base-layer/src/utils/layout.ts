@@ -243,12 +243,12 @@ function serializeUint(
   if (bytes > numberMaxSize && typeof val === "number" && val >= 2**(numberMaxSize * 8))
     throw new Error(`Value ${val} is too large to be safely converted into an integer`);
 
-  if (val >= 2n ** BigInt(bytes))
+  if (val >= 2n ** BigInt(bytes * 8))
     throw new Error(`Value ${val} is too large for ${bytes} bytes`);
 
   //big endian byte order
   for (let i = 0; i < bytes; ++i)
-    encoded[offset + i] = Number(BigInt(val) & (0xffn << BigInt(i)));
+    encoded[offset + i] = Number((BigInt(val) >> BigInt(8*(bytes-i-1)) & 0xffn));
 
   return offset + bytes;
 }

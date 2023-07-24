@@ -9,7 +9,6 @@ import {
   Layout,
   Flatten,
   ConcatStringLiterals,
-  zip
 } from "wormhole-base";
 
 import { chainConversion, universalAddressConversion } from "./layout-conversions";
@@ -154,10 +153,11 @@ const moduleConversion = <const M extends Module>(module: M) => ({
 
     return module;
   },
-  from: (_moduleStr: M): Uint8Array => {
+  from: (_sdkModule: M): Uint8Array => {
     const bytes = new Uint8Array(moduleBytesSize);
-    for (let i = 0; i < module.length; ++i)
-      bytes[moduleBytesSize - i] = module.charCodeAt(module.length - i);
+    const vaaModule = sdkModuleNameToGovernanceVaaModuleMapping[module];
+    for (let i = 1; i <= vaaModule.length; ++i)
+      bytes[moduleBytesSize - i] = vaaModule.charCodeAt(vaaModule.length - i);
 
     return bytes;
   }

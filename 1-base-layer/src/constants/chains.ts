@@ -1,4 +1,4 @@
-import { unzip, toMapping, reverseMapping } from "../utils/mapping";
+import { unzip, toMapping } from "../utils/mapping";
 
 //Typescript being the absolute mess that it is has no way to turn the keys of an object that is
 //  declared `as const` into an `as const` array (see:
@@ -50,7 +50,7 @@ export type Chain = typeof chains[number];
 export type ChainId = typeof chainIds[number];
 
 export const chainToChainIdMapping = toMapping(chainsAndChainIdEntries);
-export const chainIdToChainMapping = reverseMapping(chainToChainIdMapping);
+export const chainIdToChainMapping = toMapping(chainsAndChainIdEntries, 1, 0);
 
 export const isChain = (chain: string): chain is Chain =>
   chain in chainToChainIdMapping;

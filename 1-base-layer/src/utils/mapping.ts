@@ -64,7 +64,7 @@ export type ReverseRecord<T extends Record<PropertyKey, any>> =
 
 export const [reverseMapping, reverseArrayMapping] = (() => {
   //TODO take another look at this! - pretty sure this can be improved/combined
-  const checkAndSet = (acc: any, key: PropertyKey, value: PropertyKey): void => {
+  const checkAndSet = (acc: any, key: PropertyKey, value: unknown): void => {
     if (acc[key] !== undefined)
       throw new Error(
         `Mapping can't be uniquely inverted: ` +

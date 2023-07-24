@@ -4,6 +4,7 @@ import {
   Module,
   CustomConversion,
   column,
+  Column,
   toMapping,
   ToMapping,
   Layout,
@@ -198,12 +199,13 @@ const actionConversion = <
   }
 }) as const satisfies CustomConversion<number, A>;
 
-export const headerLayout = <
+const headerLayout = <
   const M extends Module,
   const A extends ModuleAction<M>
 >(module: M, action: A & Action) => [
   { name: "module", binary: "bytes", size: moduleBytesSize, custom: moduleConversion(module) },
   { name: "action", binary: "uint",  size: 1, custom: actionConversion(module, action) },
+  //TODO is this always Solana?
   { name: "chain",  binary: "uint",  size: 2, custom: chainConversion(actionMapping[action]) },
 ] as const;
 
@@ -234,14 +236,22 @@ type GovernancePayloadLayouts = Flatten<
   : never
 >;
 
+export const governancePayloadLiterals =
+  modules.flatMap((module) => moduleActions[module].map((action) => module + action)) as
+    readonly string[] as Column<GovernancePayloadLayouts, 0>;
+
+export const governancePayloadLiteralToLayoutMapping = toMapping(
+  modules.flatMap((module) => moduleActions[module].map((action) =>
+    [ module + action, [...headerLayout(module, action), ...actionMapping[action].layout] ]
+  )) as readonly (readonly [typeof governancePayloadLiterals[number], Layout])[]
+) as ToMapping<GovernancePayloadLayouts>;
+
+export const governanceModuleActions = moduleActions;
+
+//side-effects! finally, register with factory:
 declare global { namespace Wormhole {
   interface PayloadLiteralToDescriptionMapping extends ToMapping<GovernancePayloadLayouts> {}
 }}
 
-modules.map((module) => {
-  moduleActions[module].map((action) =>
-    registerPayloadType(
-      module + action as keyof Wormhole.PayloadLiteralToDescriptionMapping,
-      [...headerLayout(module, action), ...actionMapping[action].layout],
-    )
-  )});
+governancePayloadLiterals.forEach(payloadLiteral =>
+  registerPayloadType(payloadLiteral, governancePayloadLiteralToLayoutMapping[payloadLiteral]));

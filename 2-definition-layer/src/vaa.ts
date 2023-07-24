@@ -11,10 +11,14 @@ import {
   FixedItems,
   fixedItems,
   CustomConversion,
+  layoutConversion,
 } from "wormhole-base";
 
-import { Signature } from "./signature";
-import { chainConversion, universalAddressConversion } from "./layout-conversions";
+import {
+  chainConversion,
+  universalAddressConversion,
+  signatureConversion
+} from "./layout-conversions";
 
 const uint8ArrayConversion = {
   to: (val: Uint8Array) => val,
@@ -37,11 +41,6 @@ declare global { namespace Wormhole {
 type PayloadLiteral = keyof Wormhole.PayloadLiteralToDescriptionMapping;
 type DescriptionOf<PL extends PayloadLiteral> = Wormhole.PayloadLiteralToDescriptionMapping[PL];
 
-const layoutConversion = <L extends Layout>(layout: L) => ({
-  to: (val: Uint8Array): LayoutToType<L> => deserializeLayout(layout, val),
-  from: (val: LayoutToType<L>): Uint8Array => serializeLayout(layout, val),
-}) as const satisfies CustomConversion<Uint8Array, LayoutToType<L>>;
-
 type DescriptionToCustomConversion<D extends DescriptionOf<PayloadLiteral>> =
   D extends CustomConversion<Uint8Array, infer T>
   ? CustomConversion<Uint8Array, T>
@@ -52,25 +51,10 @@ type DescriptionToCustomConversion<D extends DescriptionOf<PayloadLiteral>> =
 type CustomConversionToType<C extends CustomConversion<Uint8Array, any>> =
   ReturnType<C["to"]>;
 
-type PayloadLiteralToPayloadType<PL extends PayloadLiteral> =
+export type PayloadLiteralToPayloadType<PL extends PayloadLiteral> =
   DescriptionToCustomConversion<DescriptionOf<PL>> extends CustomConversion<Uint8Array, any>
   ? CustomConversionToType<DescriptionToCustomConversion<DescriptionOf<PL>>>
   : never;
-
-const signatureConversion = {
-  to: (val: Uint8Array): Signature => {
-    const sig = deserializeLayout(signatureLayout, val);
-    return new Signature(sig.r, sig.s, sig.v);
-  },
-  from: (val: Signature): Uint8Array =>
-    serializeLayout(signatureLayout, {r: val.r, s: val.s, v: val.recovery}),
-} as const satisfies CustomConversion<Uint8Array, Signature>;
-
-const signatureLayout = [
-  { name: "r", binary: "uint", size: 32 },
-  { name: "s", binary: "uint", size: 32 },
-  { name: "v", binary: "uint", size:  1 },
-] as const satisfies Layout;
 
 const guardianSignatureLayout = [
   { name: "guardianIndex", binary: "uint",  size:  1},

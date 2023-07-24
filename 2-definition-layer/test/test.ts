@@ -2,7 +2,7 @@ import { expect, use as chaiUse } from "chai";
 // import chaiAsPromised from 'chai-as-promised';
 // chaiUse(chaiAsPromised);
 
-import { hexByteStringToUint8Array } from "wormhole-base";
+import { hexByteStringToUint8Array, addFixed } from "wormhole-base";
 import { UniversalAddress } from "../src/universalAddress";
 import { create, deserialize, serialize } from "../src/vaa";
 import "../src/governanceVaa";
@@ -17,18 +17,26 @@ const guardianSetUpgrade = "0x01000000020d00ce45474d9e1b1e7790a2d210871e195db53a
 describe("Governance VAA tests", function () {
   it("should create an empty VAA from an object with omitted fixed values", function () {
     const vaa = create({
-      payloadLiteral: "Uint8Array",
+      payloadLiteral: "CoreBridgeUpgradeContract",
       guardianSet: 0,
       signatures: [],
       nonce: 0,
       timestamp: 0,
       sequence: 0n,
-      emitterChain: "Ethereum",
+      emitterChain: "Solana",
       emitterAddress: new UniversalAddress(new Uint8Array(32)),
       consistencyLevel: 0,
-      payload: new Uint8Array(0)
+      payload: {
+          //module and action should not be required values but should be recursively
+          //  deduced as fixed values (once fixed custom values have been implemented)
+          //see TODOs in layout.ts
+          module: "CoreBridge",
+          action: "UpgradeContract",
+          chain: "Ethereum",
+          newContract: new UniversalAddress(new Uint8Array(32))
+      }
     });
-    expect(vaa.hash).to.not.equal(new Uint8Array(32));
+    expect(vaa.version).to.equal(1);
   });
 
   it("should correctly deserialize and reserialize a guardian set upgrade VAA", function () {
@@ -46,10 +54,5 @@ describe("Governance VAA tests", function () {
 
     const encoded = serialize(vaa);
     expect(encoded).to.deep.equal(hexByteStringToUint8Array(guardianSetUpgrade));
-  });
-
-  it("should use something that's imported", function () {
-    const addr = new UniversalAddress(new Uint8Array(32));
-    expect(addr.toUint8Array()).to.deep.equal(new Uint8Array(32));
   });
 });

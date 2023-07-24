@@ -1,13 +1,22 @@
 //TODO:
-// * implement a method that total size of a layout, assuming all items have known size
-// * implement a method that determines the offsets items in a layout (if all preceding items have
+// * make FixedItem recursive
+// * implement fixed custom conversions (that only perfom checking but return a constant value for 
+//     e.g. governance VAAs module and action field as well as for fixed chains / addresses)
+// * implement variable sized bytes (e.g. for strings) (maybe by introducing a different size
+//     property called lengthSize (ArrayItem.size should also be renamed in that case))
+// * implement a "rest" size (currently the default for ByteItems and ArrayItems when no size is
+//     specified) that consumes the remainder of the encoded data (arrays without size should thus
+//     effectively become recursive layouts)
+// * implement a method that determines the total size of a layout, if all items have known size
+// * implement a method that determines the offsets of items in a layout (if all preceding items
 //     have known, fixed size (i.e. no arrays))
 // * leverage the above to implement deserialization of just a set of fields of a layout
 // * implement a method that takes several layouts and a serialized piece of data and quickly
-//     determines which layouts this payload conforms to (might be 0 or even all!). Should leerage
+//     determines which layouts this payload conforms to (might be 0 or even all!). Should leverage
 //     the above methods and fixed values in the layout to quickly exclude candidates.
 // * implement a method that allows "raw" serialization and deserialization" i.e. that skips all the
-//     custom conversions (should only be used for testing!)
+//     custom conversions (should only be used for testing!) or even just partitions i.e. slices
+//     the encoded Uint8Array
 
 type PrimitiveTypesMapping = {
   number: number,
@@ -39,6 +48,14 @@ export type CustomConversion<FromType extends PrimitiveTypes, ToType> = {
   readonly from: (val: ToType) => FromType,
 };
 
+//allows recursive layouts (this should probably become mostly obsolete once custom conversions
+//  for arrays/tuples is implemented? (though maybe not since it's still unclear how one would
+//  implement payloads that are just a single value))
+export const layoutConversion = <L extends Layout>(layout: L) => ({
+  to: (val: Uint8Array): LayoutToType<L> => deserializeLayout(layout, val),
+  from: (val: LayoutToType<L>): Uint8Array => serializeLayout(layout, val),
+}) as const satisfies CustomConversion<Uint8Array, LayoutToType<L>>;
+
 interface LayoutItemBase<T extends BinaryLiterals> {
   readonly name: string,
   readonly binary: T,
@@ -68,14 +85,11 @@ export interface BigintLayoutItem extends LayoutItemBase<"uint"> {
 export interface BytesLayoutItem extends LayoutItemBase<"bytes"> {
   readonly size?: number,
   readonly custom?: Uint8Array | CustomConversion<Uint8Array, any>,
-  //TODO do we need variable sized byte "arrays"?
 };
 
 export interface ArrayLayoutItem extends LayoutItemBase<"array"> {
   readonly size?: NumberSize,
   readonly elements: Layout,
-  //custom conversion of arrays can be accomplished via bytes and CustomCoversion using a
-  //  separate layout
 };
 
 export type UintLayoutItem = NumberLayoutItem | BigintLayoutItem;

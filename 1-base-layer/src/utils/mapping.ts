@@ -14,7 +14,7 @@ export type ToMapping<
   ? { readonly [E in TupArr[number] as E[DefinedOrDefault<KeyIndex, 0>]]:
         E[DefinedOrDefault<ValIndex, 1>]
     }
-  : never
+  : never;
 
 export const toMapping = <
   const A extends TupleArray,

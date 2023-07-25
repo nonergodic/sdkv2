@@ -2,7 +2,7 @@ import {
   platformToChainsMapping,
   modules,
   Module,
-  CustomConversion,
+  FixedConversion,
   column,
   Column,
   toMapping,
@@ -12,25 +12,21 @@ import {
   ConcatStringLiterals,
 } from "wormhole-base";
 
-import { chainConversion, universalAddressConversion } from "./layout-conversions";
+import { chainItem, universalAddressItem, guardianSetItem } from "./layout-items";
 import { registerPayloadType } from "./vaa";
-
-//TODO should we define governance actions that are specific to a platform here?
-//     (reason against: we might want to deserialize types that are specific to the platform)
-const evmChainConversion = chainConversion({allowedChains: platformToChainsMapping["Evm"]});
 
 const actionTuples = [
   ["UpgradeContract", {
     allowNull: false,
     layout: [
-      { name: "newContract", binary: "bytes", size: 32, custom: universalAddressConversion },
+      { name: "newContract", ...universalAddressItem },
     ] as const satisfies Layout,
   }],
   ["RegisterChain", {
     allowNull: true,
     layout: [
-      { name: "foreignChain",   binary: "uint",  size:  2, custom: chainConversion() },
-      { name: "foreignAddress", binary: "bytes", size: 32, custom: universalAddressConversion },
+      { name: "foreignChain", ...chainItem() },
+      { name: "foreignAddress", ...universalAddressItem },
     ] as const satisfies Layout,
   }],
   //a word on the chainId for RecoverChainId:
@@ -40,17 +36,19 @@ const actionTuples = [
   //  the contract would suddenly accept "broadcast VAAs" which is almost certainly not what's
   //  intended.
   ["RecoverChainId", {
+    //TODO should we define governance actions that are specific to a platform here?
+    //     (reason against: we might want to deserialize types that are specific to the platform)
     allowNull: false,
     layout: [
       { name: "evmChainId", binary: "uint", size: 32 },
-      { name: "newChainId", binary: "uint", size: 2, custom: evmChainConversion},
+      { name: "newChainId", ...chainItem({allowedChains: platformToChainsMapping["Evm"]}) },
     ] as const satisfies Layout,
   }],
   ["GuardianSetUpgrade", {
     allowNull: true,
     layout: [
-      { name: "guardianSet", binary: "uint", size: 4 },
-      { name: "guardians",   binary: "array", size: 1, elements: [
+      { name: "guardianSet", ...guardianSetItem },
+      { name: "guardians", binary: "array", lengthSize: 1, elements: [
         { name: "address", binary: "bytes", size: 20 }, //TODO better (custom) type?
       ]},
     ] as const satisfies Layout,
@@ -64,14 +62,14 @@ const actionTuples = [
   ["TransferFees", {
     allowNull: true,
     layout: [
-      { name: "amount",    binary: "uint",  size: 32 },
-      { name: "recipient", binary: "bytes", size: 32, custom: universalAddressConversion },
+      { name: "amount", binary: "uint",  size: 32 },
+      { name: "recipient", ...universalAddressItem },
     ] as const satisfies Layout,
   }],
   ["UpdateDefaultProvider", {
     allowNull: false,
     layout: [
-      { name: "defaultProvider", binary: "bytes", size: 32, custom: universalAddressConversion },
+      { name: "defaultProvider", ...universalAddressItem },
     ] as const satisfies Layout,
   }],
 ] as const;
@@ -143,61 +141,24 @@ type ModuleAction<M extends Module> = typeof moduleActions[M][number];
 const moduleBytesSize = 32;
 
 const moduleConversion = <const M extends Module>(module: M) => ({
-  to: (bytes: Uint8Array): M => {
-    //bytes.lastIndexOf(0) + 1 will also work nicely if there's no null byte in the string
-    const govModule = String.fromCharCode(...bytes.subarray(bytes.lastIndexOf(0) + 1));
-    const expected = sdkModuleNameToGovernanceVaaModuleMapping[module];
-    if (expected !== govModule)
-      throw new Error(
-        `Expected ascii encoding of ${expected} but got ${bytes} = ${module} instead`
-      );
-
-    return module;
-  },
-  from: (_sdkModule: M): Uint8Array => {
+  to: module,
+  from: ((): Uint8Array => {
     const bytes = new Uint8Array(moduleBytesSize);
     const vaaModule = sdkModuleNameToGovernanceVaaModuleMapping[module];
     for (let i = 1; i <= vaaModule.length; ++i)
       bytes[moduleBytesSize - i] = vaaModule.charCodeAt(vaaModule.length - i);
 
     return bytes;
-  }
-}) as const satisfies CustomConversion<Uint8Array, M>;
-
-type ActionNum<M extends Module> = keyof typeof numToActionMapping[M];
-const isActionNum = (module: Module, actionNum: number): actionNum is ActionNum<typeof module> =>
-  actionNum in numToActionMapping[module];
+  })(),
+}) as const satisfies FixedConversion<Uint8Array, M>;
 
 const actionConversion = <
   const M extends Module,
   const A extends ModuleAction<M>
 >(module: M, action: A) => ({
-  to: (actionNum: number) => {
-    if (!isActionNum(module, actionNum))
-      throw new Error(`Invalid action ${actionNum} for module ${module}`);
-
-    const moduleNumMapping = numToActionMapping[module]
-
-    const actionStr = moduleNumMapping[actionNum as keyof typeof moduleNumMapping];
-    if (actionStr !== action)
-      throw new Error(
-        `Unexpected action number (${actionNum} = ${actionStr}) for module ${module}: ` +
-        `expected ${action} instead`
-      );
-
-    return action;
-  },
-  from: (actionStr: A) => {
-    if (actionStr !== action)
-      throw new Error(
-        `Invalid action ${actionStr} for module ${module}: ` +
-        `expected ${action} instead`
-      );
-
-    //TODO why is the explict "as number" cast necessary here?
-    return actionToNumMapping[module][action] as number;
-  }
-}) as const satisfies CustomConversion<number, A>;
+  to: action,
+  from: actionToNumMapping[module][action] as number,
+}) as const satisfies FixedConversion<number, A>;
 
 const headerLayout = <
   const M extends Module,
@@ -205,8 +166,8 @@ const headerLayout = <
 >(module: M, action: A & Action) => [
   { name: "module", binary: "bytes", size: moduleBytesSize, custom: moduleConversion(module) },
   { name: "action", binary: "uint",  size: 1, custom: actionConversion(module, action) },
-  //TODO is this always Solana?
-  { name: "chain",  binary: "uint",  size: 2, custom: chainConversion(actionMapping[action]) },
+  //TODO is this always Solana? - if so import and use `custom: fixedChain("Solana")`
+  { name: "chain", ...chainItem(actionMapping[action]) },
 ] as const;
 
 type GovernancePayloadLayouts = Flatten<

@@ -15,10 +15,12 @@ import {
 } from "wormhole-base";
 
 import {
-  chainConversion,
-  universalAddressConversion,
-  signatureConversion
-} from "./layout-conversions";
+  chainItem,
+  universalAddressItem,
+  signatureItem,
+  sequenceItem,
+  guardianSetItem,
+} from "./layout-items";
 
 const uint8ArrayConversion = {
   to: (val: Uint8Array) => val,
@@ -57,23 +59,23 @@ export type PayloadLiteralToPayloadType<PL extends PayloadLiteral> =
   : never;
 
 const guardianSignatureLayout = [
-  { name: "guardianIndex", binary: "uint",  size:  1},
-  { name: "signature",     binary: "bytes", size: 65, custom: signatureConversion }
+  { name: "guardianIndex", binary: "uint", size: 1},
+  { name: "signature", ...signatureItem }
 ] as const satisfies Layout;
 
 const headerLayout = [
-  { name: "version",     binary: "uint",  size:  1, custom: 1 },
-  { name: "guardianSet", binary: "uint",  size:  4 },
-  { name: "signatures",  binary: "array", size:  1, elements: guardianSignatureLayout },
+  { name: "version", binary: "uint", size: 1, custom: 1 },
+  { name: "guardianSet", ...guardianSetItem },
+  { name: "signatures", binary: "array", lengthSize: 1, elements: guardianSignatureLayout },
 ] as const satisfies Layout;
 
 const envelopeLayout = [
-  { name: "timestamp",        binary: "uint",  size:  4 },
-  { name: "nonce",            binary: "uint",  size:  4 },
-  { name: "emitterChain",     binary: "uint",  size:  2, custom: chainConversion() },
-  { name: "emitterAddress",   binary: "bytes", size: 32, custom: universalAddressConversion },
-  { name: "sequence",         binary: "uint",  size:  8 },
-  { name: "consistencyLevel", binary: "uint",  size:  1 }
+  { name: "timestamp", binary: "uint", size: 4 },
+  { name: "nonce", binary: "uint", size: 4 },
+  { name: "emitterChain", ...chainItem() },
+  { name: "emitterAddress", ...universalAddressItem },
+  { name: "sequence", ...sequenceItem },
+  { name: "consistencyLevel", binary: "uint", size: 1 }
 ] as const satisfies Layout;
 
 const baseLayout = [...headerLayout, ...envelopeLayout] as const;
@@ -175,5 +177,13 @@ export function deserialize<PL extends PayloadLiteral>(
 
   return { payloadLiteral, ...header, ...body, hash } as VAA<PL>;
 }
+
+export const deserializePayload = <PL extends PayloadLiteral>(
+  payloadLiteral: PL,
+  data: Uint8Array | string,
+) => deserializeLayout(
+    getPayloadDescription(payloadLiteral) as Layout,
+    (typeof data === "string") ? hexByteStringToUint8Array(data) : data
+  );
 
 payloadFactory.set("Uint8Array", uint8ArrayConversion);

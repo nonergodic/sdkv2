@@ -107,21 +107,30 @@ function getPayloadDescription<PL extends PayloadLiteral>(payloadLiteral: PL) {
   return description as DescriptionOf<PL>;
 }
 
-//We are keeping getPayladDescription() and descriptionToPayloadLayoutItem() separate because we'll
-//  want to have access to the layout (if we it was registered as such) in the future when
-//  implementing a deserialization function that takes a set of payload literals and determines
-//  which layouts (if any) the serialized VAA encodes by leveraging:
+//We are keeping getPayloadDescription() separate from descriptionToCustomConversion() and
+//  descriptionToPayloadLayoutItem() because we'll want to have access to the layout (if we it was
+//  registered as such) in the future when implementing a deserialization function that takes a set
+//  of payload literals and determines which layouts (if any) the serialized VAA encodes by
+//  leveraging:
 //    1. the size of the encoded VAA (if it is constant given the layout)
 //    2. the fixed items of the layout
 //  as a fast way to determine if that layout could possibly match at all.
+
+const isCustomConversion = (val: any): val is CustomConversion<Uint8Array,any> =>
+  val.to !== undefined;
+
+const descriptionToCustomConversion = <PL extends PayloadLiteral>(
+  description: DescriptionOf<PL>
+) => isCustomConversion(description)
+  ? description as CustomConversion<Uint8Array, any>
+  : layoutConversion(description as Layout) as DescriptionToCustomConversion<typeof description>;
+
 const descriptionToPayloadLayoutItem = <PL extends PayloadLiteral> (
   description: DescriptionOf<PL>
 ) => ({
   name: "payload",
   binary: "bytes",
-  custom: (Array.isArray(description))
-    ? layoutConversion(description)
-    : description as CustomConversion<Uint8Array, any>,
+  custom: descriptionToCustomConversion(description),
 }) as const satisfies LayoutItem;
 
 const bodyLayout = <PL extends PayloadLiteral>(payloadLiteral: PL) => [
@@ -177,6 +186,11 @@ export function deserialize<PL extends PayloadLiteral>(
 
   return { payloadLiteral, ...header, ...body, hash } as VAA<PL>;
 }
+
+export const serializePayload = <PL extends PayloadLiteral>(
+  payloadLiteral: PL,
+  payload: PayloadLiteralToPayloadType<PL>,
+) => descriptionToCustomConversion(getPayloadDescription(payloadLiteral)).from(payload);
 
 export const deserializePayload = <PL extends PayloadLiteral>(
   payloadLiteral: PL,

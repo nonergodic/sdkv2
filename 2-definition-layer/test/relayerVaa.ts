@@ -2,8 +2,8 @@ import { expect, use as chaiUse } from "chai";
 // import chaiAsPromised from 'chai-as-promised';
 // chaiUse(chaiAsPromised);
 
-import { hexByteStringToUint8Array, addFixed } from "wormhole-base";
-import { deserializePayload, serialize } from "../src/vaa";
+import { hexByteStringToUint8Array } from "wormhole-base";
+import { serializePayload, deserializePayload } from "../src/vaa";
 import "../src/relayerVaa";
 
 //monkey-patch to allow stringifying BigInts
@@ -21,7 +21,7 @@ describe("Relayer VAA tests", function () {
 
     // console.log(payload);
 
-    // const encoded = serialize(vaa);
-    // expect(encoded).to.deep.equal(hexByteStringToUint8Array(original));
+    const encoded = serializePayload("DeliveryInstruction", payload);
+    expect(encoded).to.deep.equal(hexByteStringToUint8Array(original));
   });
 });

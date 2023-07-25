@@ -265,10 +265,11 @@ export const calcLayoutSize = (
         if (item.lengthSize !== undefined)
           acc += item.lengthSize;
 
-        if (item.custom !== undefined)
-          return acc + item.custom.from(data[item.name]).length;
-
-        return (data[item.name] as LayoutToType<typeof item>).length;
+        return acc + (
+          (item.custom !== undefined)
+          ? item.custom.from(data[item.name])
+          : (data[item.name] as LayoutToType<typeof item>)
+        ).length;
       }
       case "uint": {
         return acc + item.size;

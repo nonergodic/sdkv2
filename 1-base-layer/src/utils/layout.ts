@@ -1,12 +1,6 @@
 //TODO:
 // * make FixedItem recursive
-// * implement fixed custom conversions (that only perfom checking but return a constant value for 
-//     e.g. governance VAAs module and action field as well as for fixed chains / addresses)
-// * implement variable sized bytes (e.g. for strings) (maybe by introducing a different size
-//     property called lengthSize (ArrayItem.size should also be renamed in that case))
-// * implement a "rest" size (currently the default for ByteItems and ArrayItems when no size is
-//     specified) that consumes the remainder of the encoded data (arrays without size should thus
-//     effectively become recursive layouts)
+// * implement a swtich layout item that maps different values (versions) to different sublayouts
 // * implement a method that determines the total size of a layout, if all items have known size
 // * implement a method that determines the offsets of items in a layout (if all preceding items
 //     have known, fixed size (i.e. no arrays))

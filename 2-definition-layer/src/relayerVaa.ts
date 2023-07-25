@@ -1,30 +1,25 @@
 import {
-  CustomConversion,
   Layout,
   UintLayoutItem,
   LengthPrefixedBytesLayoutItem,
-  ToMapping
+  ToMapping,
+  layoutConversion
 } from "wormhole-base";
 import { chainItem, universalAddressItem, sequenceItem } from "./layout-items";
 import { registerPayloadType } from "./vaa";
 
-type ExecutionInfo = Uint8Array;
-
 const amountItem = { binary: "uint", size: 32 } as const satisfies Omit<UintLayoutItem, "name">;
+
+const executionInfoLayout = [
+  { name: "version", binary: "uint", size: 32, custom: 0n },
+  { name: "gasLimit", ...amountItem },
+  { name: "targetChainRefundPerGasUnused", ...amountItem },
+] as const satisfies Layout;
 
 const encodedExecutionItem = {
   binary: "bytes",
   lengthSize: 4,
-  custom: {
-    to: (encoded: Uint8Array): ExecutionInfo => {
-      //decoding code goes here (probably just another layout or set of layouts)
-      return encoded;
-    },
-    from: (val: ExecutionInfo): Uint8Array => {
-      //encoding code goes here (again, probably leveraging layout serialization)
-      return val;
-    }
-  } satisfies CustomConversion<Uint8Array, ExecutionInfo>
+  custom: layoutConversion(executionInfoLayout)
 } as const satisfies Omit<LengthPrefixedBytesLayoutItem, "name">;
 
 const vaaKeyLayout = [
@@ -62,7 +57,7 @@ const relayerPayloads = [
   [ "DeliveryOverrideLayout", [
     { name: "version", binary: "uint", size: 1, custom: 1 },
     { name: "receiverValue", ...amountItem },
-    { name: "newEncodedExecutionInfo", ...encodedExecutionItem },
+    { name: "newExecutionInfo", ...encodedExecutionItem },
     { name: "redeliveryHash", binary: "bytes", size: 32 },
   ]]
 ] as const satisfies readonly (readonly [string, Layout])[];

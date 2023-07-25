@@ -4,13 +4,13 @@ import { AnyContracts, ChainId, ChainName, ParsedMessage, ParsedRelayerMessage, 
 import { Wormhole } from '../src/wormhole';
 import { MockContracts } from './mockContracts';
 
-export class MockContext extends TokenBridgeAbstract<any> {
+export class MockContext1 extends TokenBridgeAbstract<any> {
   contracts: AnyContracts;
-  protected wormhole: Wormhole;
+  readonly wormhole: Wormhole;
 
-  constructor(network: Network, wormholeBase?: Wormhole) {
+  constructor(wormholeInstance: Wormhole) {
     super();
-    this.wormhole = wormholeBase || new Wormhole(network, {});
+    this.wormhole = wormholeInstance;
     this.contracts = new MockContracts(this.wormhole);
   }
 
@@ -107,5 +107,23 @@ export class MockContext extends TokenBridgeAbstract<any> {
     chain: ChainName | ChainId,
   ): Promise<number> {
     throw new Error('not implemented');
+  };
+}
+
+export class MockContext2 extends MockContext1 {
+  constructor(wormholeInstance: Wormhole) {
+    super(wormholeInstance);
+  }
+
+  async startTransfer(
+    token: TokenId | 'native',
+    amount: bigint,
+    sendingChain: ChainName | ChainId,
+    senderAddress: string,
+    recipientChain: ChainName | ChainId,
+    recipientAddress: string,
+    relayerFee: any,
+  ): Promise<any> {
+    return 2;
   };
 }

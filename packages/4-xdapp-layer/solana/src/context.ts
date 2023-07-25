@@ -83,9 +83,9 @@ export class SolanaContext
   protected wormhole: Wormhole;
   connection: Connection | undefined;
 
-  constructor(network: Network, wormholeInstance?: Wormhole) {
+  constructor(wormholeInstance: Wormhole) {
     super();
-    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    this.wormhole = wormholeInstance;
     const tag =
       this.wormhole.network === Network.MAINNET ? 'mainnet-beta' : 'devnet';
     this.connection = new Connection(

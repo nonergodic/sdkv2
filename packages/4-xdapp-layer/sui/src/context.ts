@@ -46,9 +46,9 @@ export class SuiContext extends RelayerAbstract<TransactionBlock> {
   protected wormhole: Wormhole;
   readonly provider: JsonRpcProvider;
 
-  constructor(network: Network, wormholeInstance?: Wormhole) {
+  constructor(wormholeInstance: Wormhole) {
     super();
-    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    this.wormhole = wormholeInstance;
     const connection = this.wormhole.conf.rpcs.sui;
     if (connection === undefined) throw new Error('no connection');
     this.provider = new JsonRpcProvider(

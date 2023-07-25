@@ -153,9 +153,9 @@ export class SeiContext
   private readonly CHAIN = 'sei';
   private readonly REDEEM_EVENT_DEFAULT_MAX_BLOCKS = 2000;
 
-  constructor(network: Network, wormholeInstance?: Wormhole) {
+  constructor(wormholeInstance: Wormhole) {
     super();
-    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    this.wormhole = wormholeInstance;
     this.contracts = new SeiContracts(this.wormhole);
   }
 

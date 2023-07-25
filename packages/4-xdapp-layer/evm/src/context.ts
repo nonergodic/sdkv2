@@ -42,9 +42,9 @@ export class EvmContext extends RelayerAbstract<ethers.ContractReceipt> {
   readonly contracts: EvmContracts;
   protected wormhole: Wormhole;
 
-  constructor(network: Network, wormholeInstance?: Wormhole) {
+  constructor(wormholeInstance: Wormhole) {
     super();
-    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    this.wormhole = wormholeInstance;
     this.contracts = new EvmContracts(this.wormhole);
   }
 

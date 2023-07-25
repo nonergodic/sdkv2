@@ -16,7 +16,6 @@ import {
   parseTokenTransferPayload,
   TokenBridgeAbstract,
   MAINNET_CHAINS,
-  Network,
 } from '@wormhole-foundation/sdk-base';
 import { AptosContracts } from './contracts';
 import {
@@ -40,9 +39,9 @@ export class AptosContext extends TokenBridgeAbstract<Types.EntryFunctionPayload
   readonly aptosClient: AptosClient;
   readonly coinClient: CoinClient;
 
-  constructor(network: Network, wormholeInstance?: Wormhole) {
+  constructor(wormholeInstance: Wormhole) {
     super();
-    this.wormhole = wormholeInstance || new Wormhole(network, {});
+    this.wormhole = wormholeInstance;
     const rpc = this.wormhole.conf.rpcs.aptos;
     if (rpc === undefined) throw new Error('No Aptos rpc configured');
     this.aptosClient = new AptosClient(rpc);

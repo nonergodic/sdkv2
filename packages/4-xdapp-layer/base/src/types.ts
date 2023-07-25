@@ -33,7 +33,7 @@ export type ChainResourceMap = {
 };
 
 export type ContextConfig = {
-  [C in Context]?: AnyContext;
+  [C in Context]?: any;
 };
 
 export type Contracts = {

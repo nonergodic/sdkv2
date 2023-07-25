@@ -5,7 +5,7 @@ import { filterByContext } from "../src/utils";
 
 export class MockContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  protected wormhole: Wormhole;
+  readonly wormhole: Wormhole;
 
   constructor(wormholeBase: Wormhole) {
     super();

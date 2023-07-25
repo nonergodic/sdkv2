@@ -18,7 +18,7 @@ import {
  */
 export class EvmContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly wormhole: Wormhole;
+  protected wormhole: Wormhole;
 
   constructor(wormholeBase: Wormhole) {
     super();

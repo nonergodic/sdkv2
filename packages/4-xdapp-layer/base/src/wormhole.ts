@@ -71,11 +71,8 @@ export class Wormhole extends MultiProvider<Domain> {
 
     this._contexts = new Map();
     for (const contextType in contexts) {
-      const context = contexts[contextType as Context];
-      if (context) {
-        context.setWormholeInstance(this);
-        this._contexts.set(contextType as Context, context);
-      }
+      const context = new contexts[contextType as Context]!(this);
+      this._contexts.set(contextType as Context, context);
     }
 
     this.registerProviders();

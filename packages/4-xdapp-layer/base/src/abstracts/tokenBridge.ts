@@ -25,10 +25,6 @@ export abstract class TokenBridgeAbstract<TransactionResult> {
   abstract contracts: AnyContracts;
   protected abstract wormhole: Wormhole;
 
-  setWormholeInstance(wormholeInstance: Wormhole) {
-    this.wormhole = wormholeInstance;
-  }
-
   /**
    * Send a Token Bridge transfer
    *

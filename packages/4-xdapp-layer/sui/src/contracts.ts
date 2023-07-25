@@ -15,7 +15,7 @@ import { SuiRelayer } from './relayer';
  */
 export class SuiContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly wormhole: Wormhole;
+  protected wormhole: Wormhole;
   readonly provider: JsonRpcProvider;
 
   constructor(wormholeBase: Wormhole, provider: JsonRpcProvider) {

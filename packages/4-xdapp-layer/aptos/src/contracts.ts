@@ -14,7 +14,7 @@ import { AptosClient } from 'aptos';
  */
 export class AptosContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly wormhole: Wormhole;
+  protected wormhole: Wormhole;
   readonly client: AptosClient;
 
   constructor(wormholeBase: Wormhole, client: AptosClient) {

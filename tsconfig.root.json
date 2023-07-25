@@ -4,7 +4,7 @@
     "declaration": true,
     "sourceMap": true,
     "composite": true,
-    "types": ["mocha", "chai"],
+    "types": ["mocha", "chai", "node", "jest"],
     "typeRoots": ["./node_modules/@types"],
     "lib": ["es2020"],
     "module": "CommonJS",

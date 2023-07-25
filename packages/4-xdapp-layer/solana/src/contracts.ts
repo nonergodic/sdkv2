@@ -23,7 +23,7 @@ import { createReadOnlyNftBridgeProgramInterface } from './utils/nftBridge';
  */
 export class SolContracts extends ContractsAbstract {
   protected _contracts: Map<ChainName, any>;
-  readonly wormhole: Wormhole;
+  protected wormhole: Wormhole;
 
   constructor(wormholeBase: Wormhole) {
     super();

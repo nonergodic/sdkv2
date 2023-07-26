@@ -101,19 +101,32 @@ export type BytesLayoutItem =
 export type LayoutItem = UintLayoutItem | BytesLayoutItem | ArrayLayoutItem | ObjectLayoutItem;
 export type Layout = readonly LayoutItem[];
 
-//TODO rename seeing how it also accepts LayoutItems and not just Layouts
+//TODO this is an extremly ugly hack to get around the “Type instantiation is excessively deep and
+//     possibly infinite” issue that popped up when ObjectLayoutItems were added
+//I'm not convinced this is really necessary and that there isn't some way to amend the code which
+//  prevents the issue altogether, but for now this will have to do
+type Depth = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+type MaxDepth = 10;
+
 //the order of the checks matters here!
 //  if FixedConversion was tested for first, its ToType would erroneously be inferred to be a
 //    the `to` function that actually belongs to a CustomConversion
 //  unclear why this happens, seeing how the `from` type wouldn't fit but it happened nonetheless
-export type LayoutToType<T> =
+export type LayoutToType<T extends Layout, D extends Depth[number] = MaxDepth> =
+  [D] extends [never] ?
+  never :
   T extends Layout
   //raw tuple (separate, so we can handle the outermost array)
-  ? { readonly [Item in T[number] as Item['name']]: LayoutToType<Item> }
-  : T extends ArrayLayoutItem
-  ? LayoutToType<T["elements"]>[]
+  ? { readonly [Item in T[number] as Item['name']]: LayoutItemToType<Item, D> }
+  : T extends LayoutItem
+  ? LayoutItemToType<T, D>
+  : never;
+
+export type LayoutItemToType<T extends LayoutItem, D extends Depth[number] = MaxDepth> =
+  T extends ArrayLayoutItem
+  ? LayoutToType<T["elements"], Depth[D]>[]
   : T extends ObjectLayoutItem
-  ? LayoutToType<T["layout"]>
+  ? LayoutToType<T["layout"], Depth[D]>
   : T extends UintLayoutItem
   ? ( T["custom"] extends number | bigint
     ? T["custom"]
@@ -149,9 +162,6 @@ export type FixedItems<L extends Layout> =
     )
   : {};
 
-export type DynamicItems<L extends Layout> =
-  Omit<LayoutToType<L>, keyof FixedItems<L>>;
-
 export const fixedItems = <L extends Layout>(layout: L): FixedItems<L> =>
   layout.reduce((acc: any, item: any) =>
     item["custom"] !== undefined
@@ -164,6 +174,8 @@ export const fixedItems = <L extends Layout>(layout: L): FixedItems<L> =>
     : acc,
     {} as any
   );
+
+export type DynamicItems<L extends Layout> = Omit<LayoutToType<L>, keyof FixedItems<L>>;
 
 export const addFixed = <L extends Layout>(
   layout: L,
@@ -237,13 +249,13 @@ export const calcLayoutSize = (
   layout.reduce((acc: number, item: LayoutItem) => {
     switch (item.binary) {
       case "object": {
-        return acc + calcLayoutSize(item.layout, data[item.name] as LayoutToType<typeof item>)
+        return acc + calcLayoutSize(item.layout, data[item.name] as LayoutItemToType<typeof item>)
       }
       case "array": {
         if (item.lengthSize !== undefined)
           acc += item.lengthSize;
 
-        const narrowedData = data[item.name] as LayoutToType<typeof item>;
+        const narrowedData = data[item.name] as LayoutItemToType<typeof item>;
         for (let i = 0; i < narrowedData.length; ++i)
           acc += calcLayoutSize(item.elements, narrowedData[i]);
 
@@ -268,7 +280,7 @@ export const calcLayoutSize = (
         return acc + (
           (item.custom !== undefined)
           ? item.custom.from(data[item.name])
-          : (data[item.name] as LayoutToType<typeof item>)
+          : (data[item.name] as LayoutItemToType<typeof item>)
         ).length;
       }
       case "uint": {
@@ -330,14 +342,14 @@ const checkUint8ArrayDeeplyEqual = (custom: Uint8Array, data: Uint8Array): void 
 
 function serializeLayoutItem(
   item: LayoutItem,
-  data: LayoutToType<typeof item>,
+  data: LayoutItemToType<typeof item>,
   encoded: Uint8Array,
   offset: number
 ): number {
   try {
     switch (item.binary) {
       case "object": {
-        data = data as LayoutToType<typeof item>;
+        data = data as LayoutItemToType<typeof item>;
         for (const i of item.layout)
           offset = serializeLayoutItem(i, data[i.name], encoded, offset);
 
@@ -345,7 +357,7 @@ function serializeLayoutItem(
       }
       case "array": {
         //Typescript does not infer the narrowed type of data automatically and retroactively
-        data = data as LayoutToType<typeof item>;
+        data = data as LayoutItemToType<typeof item>;
         if (item.lengthSize !== undefined)
           offset = serializeUint(encoded, offset, data.length, item.lengthSize);
 
@@ -355,7 +367,7 @@ function serializeLayoutItem(
         break;
       }
       case "bytes": {
-        data = data as LayoutToType<typeof item>;
+        data = data as LayoutItemToType<typeof item>;
         const value = (() => {
           if (item.custom !== undefined) {
             if (item.custom instanceof Uint8Array) {
@@ -382,7 +394,7 @@ function serializeLayoutItem(
         break;
       }
       case "uint": {
-        data = data as LayoutToType<typeof item>;
+        data = data as LayoutItemToType<typeof item>;
         const value = (() => {
           if (item.custom !== undefined) {
             if (typeof item.custom == "number" || typeof item.custom === "bigint") {
@@ -443,7 +455,7 @@ function deserializeLayoutItem (
   item: LayoutItem,
   encoded: Uint8Array,
   offset: number,
-): readonly [LayoutToType<typeof item>, number] {
+): readonly [LayoutItemToType<typeof item>, number] {
   try {
     switch (item.binary) {
       case "object": {

@@ -94,9 +94,10 @@ export interface VAA<PL extends PayloadLiteral = "Uint8Array"> extends BaseLayou
 
 // type govAA = "CoreBridgeUpgradeContract";
 // type MyDescription = DescriptionOf<govAA>
-// type MyType = LayoutToType<LiteralToPayloadLayoutItem<govAA>>;
+// type MyType = LayoutToType<DescriptionOf<govAA>>;
 // type MyVaa = { [K in keyof VAA<govAA>]: VAA<govAA>[K] };
 // type Look = MyVaa["signatures"];
+// type x = { [K in keyof VAA<"CoreBridgeUpgradeContract">]: VAA<"CoreBridgeUpgradeContract">[K] };
 
 const payloadFactory = new Map<PayloadLiteral, Layout | CustomConversion<Uint8Array, any>>();
 
@@ -116,7 +117,7 @@ function getPayloadDescription<PL extends PayloadLiteral>(payloadLiteral: PL) {
 //    2. the fixed items of the layout
 //  as a fast way to determine if that layout could possibly match at all.
 
-const isCustomConversion = (val: any): val is CustomConversion<Uint8Array,any> =>
+const isCustomConversion = (val: any): val is CustomConversion<Uint8Array, any> =>
   val.to !== undefined;
 
 const descriptionToCustomConversion = <PL extends PayloadLiteral>(
@@ -140,11 +141,14 @@ const bodyLayout = <PL extends PayloadLiteral>(payloadLiteral: PL) => [
 
 export const create = <PL extends PayloadLiteral = "Uint8Array">(
   vaaData: Omit<VAA<PL>, keyof FixedItems<typeof baseLayout> | "hash">
-): VAA<PL> => ({
-  ...fixedItems(baseLayout),
-  ...vaaData,
-  hash: keccak_256(serializeLayout(bodyLayout(vaaData.payloadLiteral), vaaData)),
-});
+): VAA<PL> => {
+  const layout = bodyLayout(vaaData.payloadLiteral);
+  return {
+    ...fixedItems(baseLayout),
+    ...vaaData,
+    hash: keccak_256(serializeLayout(layout, vaaData as LayoutToType<typeof layout>)),
+  };
+};
 
 export function registerPayloadType<PL extends PayloadLiteral>(
   payloadLiteral: PL,
@@ -195,9 +199,8 @@ export const serializePayload = <PL extends PayloadLiteral>(
 export const deserializePayload = <PL extends PayloadLiteral>(
   payloadLiteral: PL,
   data: Uint8Array | string,
-) => deserializeLayout(
-    getPayloadDescription(payloadLiteral) as Layout,
-    (typeof data === "string") ? hexByteStringToUint8Array(data) : data
-  );
+) => descriptionToCustomConversion(getPayloadDescription(payloadLiteral))
+  .to((typeof data === "string") ? hexByteStringToUint8Array(data) : data) as
+  PayloadLiteralToPayloadType<PL>;
 
 payloadFactory.set("Uint8Array", uint8ArrayConversion);

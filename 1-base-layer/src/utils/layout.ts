@@ -42,9 +42,6 @@ export type CustomConversion<FromType extends PrimitiveType, ToType> = {
   readonly from: (val: ToType) => FromType,
 };
 
-export type CustomType<FromType extends PrimitiveType, ToType> =
-  FromType | FixedConversion<FromType, ToType> | CustomConversion<FromType, ToType>;
-
 //allows recursive layouts (this should probably become mostly obsolete once custom conversions
 //  for arrays/tuples is implemented? (though maybe not since it's still unclear how one would
 //  implement payloads that are just a single value))
@@ -53,30 +50,44 @@ export const layoutConversion = <L extends Layout>(layout: L) => ({
   from: (val: LayoutToType<L>): Uint8Array => serializeLayout(layout, val),
 }) as const satisfies CustomConversion<Uint8Array, LayoutToType<L>>;
 
-interface LayoutItemBase<T extends BinaryLiterals> {
+interface LayoutItemBase<BL extends BinaryLiterals> {
   readonly name: string,
-  readonly binary: T,
+  readonly binary: BL,
+};
+
+type TypeCond<T, U> = [T] extends [never] ? {a: U} : {b: U};
+
+interface PrimitiveFixedCustom<T extends PrimitiveType> {
+  custom: T,
+  omit?: boolean
+};
+
+interface OptionalToFromCustom<T extends PrimitiveType> {
+  custom?: FixedConversion<T, any> | CustomConversion<T, any>
 };
 
 //size: number of bytes used to encode the item
-export interface NumberLayoutItem extends LayoutItemBase<"uint"> {
-  readonly size: NumberSize,
-  readonly custom?: CustomType<number, any>,
+interface UintLayoutItemBase<T extends number | bigint> extends LayoutItemBase<"uint"> {
+  size: T extends bigint ? number : NumberSize,
 };
 
-export interface BigintLayoutItem extends LayoutItemBase<"uint"> {
-  readonly size: number,
-  readonly custom?: CustomType<bigint, any>,
-};
+export interface PrimitiveFixedUintLayoutItem<T extends number | bigint>
+  extends UintLayoutItemBase<T>, PrimitiveFixedCustom<T> {};
+
+export interface OptionalToFromUintLayoutItem<T extends number | bigint>
+  extends UintLayoutItemBase<T>, OptionalToFromCustom<T> {};
+
+export interface FixedPrimitiveBytesLayoutItem
+  extends LayoutItemBase<"bytes">, PrimitiveFixedCustom<Uint8Array> {};
 
 export interface FixedValueBytesLayoutItem extends LayoutItemBase<"bytes"> {
-  readonly custom: Uint8Array | FixedConversion<Uint8Array, any>,
-}
+  readonly custom: FixedConversion<Uint8Array, any>,
+};
 
 export interface FixedSizeBytesLayoutItem extends LayoutItemBase<"bytes"> {
   readonly size: number,
   readonly custom?: CustomConversion<Uint8Array, any>,
-}
+};
 
 //length size: number of bytes used to encode the preceeding length field which in turn
 //  hold either the number of bytes (for bytes) or elements (for array)
@@ -95,9 +106,16 @@ export interface ObjectLayoutItem extends LayoutItemBase<"object"> {
   readonly layout: Layout,
 }
 
-export type UintLayoutItem = NumberLayoutItem | BigintLayoutItem;
-export type BytesLayoutItem =
-  FixedValueBytesLayoutItem | FixedSizeBytesLayoutItem | LengthPrefixedBytesLayoutItem;
+export type UintLayoutItem = |
+  PrimitiveFixedUintLayoutItem<number> |
+  OptionalToFromUintLayoutItem<number> |
+  PrimitiveFixedUintLayoutItem<bigint> |
+  OptionalToFromUintLayoutItem<bigint>;
+export type BytesLayoutItem = |
+  FixedPrimitiveBytesLayoutItem |
+  FixedValueBytesLayoutItem |
+  FixedSizeBytesLayoutItem |
+  LengthPrefixedBytesLayoutItem;
 export type LayoutItem = UintLayoutItem | BytesLayoutItem | ArrayLayoutItem | ObjectLayoutItem;
 export type Layout = readonly LayoutItem[];
 
@@ -108,6 +126,8 @@ export type Layout = readonly LayoutItem[];
 type Depth = [never, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 type MaxDepth = 10;
 
+type NameOrOmitted<T extends { name: PropertyKey }> = T extends {omit: true} ? never : T["name"];
+
 //the order of the checks matters here!
 //  if FixedConversion was tested for first, its ToType would erroneously be inferred to be a
 //    the `to` function that actually belongs to a CustomConversion
@@ -117,7 +137,7 @@ export type LayoutToType<T extends Layout, D extends Depth[number] = MaxDepth> =
   never :
   T extends Layout
   //raw tuple (separate, so we can handle the outermost array)
-  ? { readonly [Item in T[number] as Item['name']]: LayoutItemToType<Item, D> }
+  ? { readonly [Item in T[number] as NameOrOmitted<Item>]: LayoutItemToType<Item, D> }
   : T extends LayoutItem
   ? LayoutItemToType<T, D>
   : never;
@@ -230,7 +250,8 @@ export function deserializeLayout<L extends Layout>(
 ): LayoutToType<L> | readonly [LayoutToType<L>, number] {
   let decoded = {} as any;
   for (const item of layout)
-    [decoded[item.name], offset] = deserializeLayoutItem(item, encoded, offset);
+    [((item as any).omit ? {} : decoded)[item.name], offset] =
+      deserializeLayoutItem(item, encoded, offset);
 
   if (consumeAll && offset !== encoded.length)
     throw new Error(`encoded data is longer than expected: ${encoded.length} > ${offset}`);
@@ -379,7 +400,8 @@ function serializeLayoutItem(
               return item.custom.from;
           }
 
-          item = item as Exclude<typeof item, FixedValueBytesLayoutItem>;
+          item = item as
+            Exclude<typeof item, FixedPrimitiveBytesLayoutItem | FixedValueBytesLayoutItem>;
           const ret = item.custom !== undefined ? item.custom.from(data) : data;
           if (isFixedSizeBytes(item))
             checkUint8ArraySize(ret, item.size);
@@ -491,7 +513,8 @@ function deserializeLayoutItem (
         if (fixedFrom !== undefined)
           newOffset = updateOffset(encoded, offset, fixedFrom.length);
         else {
-          item = item as Exclude<typeof item, FixedValueBytesLayoutItem>;
+          item = item as
+            Exclude<typeof item, FixedPrimitiveBytesLayoutItem | FixedValueBytesLayoutItem>;
           if (isFixedSizeBytes(item))
             newOffset = updateOffset(encoded, offset, item.size);
           else if (item.lengthSize !== undefined) {

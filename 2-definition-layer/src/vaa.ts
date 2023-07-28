@@ -43,6 +43,7 @@ declare global { namespace Wormhole {
 type PayloadLiteral = keyof Wormhole.PayloadLiteralToDescriptionMapping;
 type DescriptionOf<PL extends PayloadLiteral> = Wormhole.PayloadLiteralToDescriptionMapping[PL];
 
+//TODO turn Layouts into ObjectLayoutItems instead of layoutConversion!
 type DescriptionToCustomConversion<D extends DescriptionOf<PayloadLiteral>> =
   D extends CustomConversion<Uint8Array, infer T>
   ? CustomConversion<Uint8Array, T>
@@ -64,7 +65,7 @@ const guardianSignatureLayout = [
 ] as const satisfies Layout;
 
 const headerLayout = [
-  { name: "version", binary: "uint", size: 1, custom: 1 },
+  { name: "version", binary: "uint", size: 1, custom: 1, omit: true },
   { name: "guardianSet", ...guardianSetItem },
   { name: "signatures", binary: "array", lengthSize: 1, elements: guardianSignatureLayout },
 ] as const satisfies Layout;

@@ -12,8 +12,8 @@ import {
   ConcatStringLiterals,
 } from "wormhole-base";
 
-import { chainItem, universalAddressItem, guardianSetItem } from "./layout-items";
-import { registerPayloadType } from "./vaa";
+import { chainItem, universalAddressItem, guardianSetItem } from "../layout-items";
+import { registerPayloadType } from "../vaa";
 
 const actionTuples = [
   ["UpgradeContract", {

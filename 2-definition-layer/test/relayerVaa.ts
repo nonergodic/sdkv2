@@ -4,7 +4,7 @@ import { expect, use as chaiUse } from "chai";
 
 import { hexByteStringToUint8Array } from "wormhole-base";
 import { serializePayload, deserializePayload } from "../src/vaa";
-import "../src/relayerVaa";
+import "../src/payloads/relayer";
 
 //monkey-patch to allow stringifying BigInts
 (BigInt.prototype as any).toJSON = function() { return this.toString() };
@@ -15,9 +15,8 @@ const original = "0x01000500000000000000000000000046AF49E93E92ACE9CB04545C6548E3
 describe("Relayer VAA tests", function () {
   it("should correctly deserialize and reserialize a relayer VAA", function () {
     const payload = deserializePayload("DeliveryInstruction", original);
-    expect(payload.payloadId).to.equal(1);
-    expect(payload.targetChain).to.equal("Polygon");
-    expect(payload.refundChain).to.equal("Polygon");
+    expect(payload.target.chain).to.equal("Polygon");
+    expect(payload.refund.chain).to.equal("Polygon");
 
     // console.log(payload);
 

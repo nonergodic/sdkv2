@@ -1,9 +1,20 @@
 {
   "name": "wormhole-definitions",
   "version": "0.1.0",
-  "main": "src/index.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.js"
+    }
+  },
   "scripts": {
-    "test": "ts-mocha -p ../tsconfig.json -t 1000000 test/*.ts"
+    "test": "jest --config ../jest.config.ts __tests__/*.ts",
+    "build:cjs": "tsc -p ./tsconfig.cjs.json",
+    "build:esm": "tsc -p ./tsconfig.esm.json",
+    "build": "npm run clean && npm run build:cjs && npm run build:esm",
+    "clean": "rm -rf ./dist"
   },
   "dependencies": {
     "wormhole-base": "^0.1.0",

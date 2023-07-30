@@ -74,5 +74,5 @@ export function toNative<T extends Platform | Chain>(
   if (!nativeCtr)
     throw new Error(`No native address type registered for platform ${platform}`);
 
-  return (new nativeCtr(ua)) as NativeAddressType<T>;
+  return (new nativeCtr(ua)) as unknown as NativeAddressType<T>;
 }

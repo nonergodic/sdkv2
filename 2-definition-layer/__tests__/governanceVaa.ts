@@ -1,6 +1,4 @@
-import { expect, use as chaiUse } from "chai";
-// import chaiAsPromised from 'chai-as-promised';
-// chaiUse(chaiAsPromised);
+import { describe, expect, it } from "@jest/globals"
 
 import { hexByteStringToUint8Array } from "wormhole-base";
 import { UniversalAddress } from "../src/universalAddress";
@@ -96,22 +94,22 @@ describe("Governance VAA tests", function () {
       }
     });
     //TODO
-    expect(1).to.equal(1);
+    expect(1).toBe(1);
   });
 
   it("should correctly deserialize and reserialize a guardian set upgrade VAA", function () {
     const vaa = deserialize("CoreBridgeGuardianSetUpgrade", guardianSetUpgrade);
-    expect(vaa.payloadLiteral).to.equal("CoreBridgeGuardianSetUpgrade");
-    expect(vaa.guardianSet).to.equal(2);
-    expect(vaa.signatures).to.have.length(13);
-    expect(vaa.nonce).to.equal(2651610618);
-    expect(vaa.emitterChain).to.equal("Solana");
-    expect(vaa.payload.module).to.equal("CoreBridge");
-    expect(vaa.payload.action).to.equal("GuardianSetUpgrade");
-    expect(vaa.payload.guardianSet).to.equal(3);
-    expect(vaa.payload.guardians).to.have.length(19);
+    expect(vaa.payloadLiteral).toBe("CoreBridgeGuardianSetUpgrade");
+    expect(vaa.guardianSet).toBe(2);
+    expect(vaa.signatures.length).toBe(13);
+    expect(vaa.nonce).toBe(2651610618);
+    expect(vaa.emitterChain).toBe("Solana");
+    expect(vaa.payload.module).toBe("CoreBridge");
+    expect(vaa.payload.action).toBe("GuardianSetUpgrade");
+    expect(vaa.payload.guardianSet).toBe(3);
+    expect(vaa.payload.guardians).toBe(19);
 
     const encoded = serialize(vaa);
-    expect(encoded).to.deep.equal(hexByteStringToUint8Array(guardianSetUpgrade));
+    expect(encoded).toEqual(hexByteStringToUint8Array(guardianSetUpgrade));
   });
 });

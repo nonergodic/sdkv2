@@ -8,10 +8,10 @@ import {
   LayoutToType,
   serializeLayout,
   deserializeLayout,
-  FixedItems,
-  fixedItems,
+  DynamicItemsOfLayout,
+  addFixedValues,
   CustomConversion,
-  layoutConversion,
+  LayoutItemToType,
 } from "wormhole-base";
 
 import {
@@ -43,20 +43,16 @@ declare global { namespace Wormhole {
 type PayloadLiteral = keyof Wormhole.PayloadLiteralToDescriptionMapping;
 type DescriptionOf<PL extends PayloadLiteral> = Wormhole.PayloadLiteralToDescriptionMapping[PL];
 
-//TODO turn Layouts into ObjectLayoutItems instead of layoutConversion!
-type DescriptionToCustomConversion<D extends DescriptionOf<PayloadLiteral>> =
-  D extends CustomConversion<Uint8Array, infer T>
-  ? CustomConversion<Uint8Array, T>
+type DescriptionToPayloadItem<D extends DescriptionOf<PayloadLiteral>> =
+  D extends CustomConversion<Uint8Array, any>
+  ? { name: "payload", binary: "bytes", custom: D }
   : D extends Layout
-  ? ReturnType<typeof layoutConversion<D>>
+  ? { name: "payload", binary: "object", layout: D }
   : never;
 
-type CustomConversionToType<C extends CustomConversion<Uint8Array, any>> =
-  ReturnType<C["to"]>;
-
 export type PayloadLiteralToPayloadType<PL extends PayloadLiteral> =
-  DescriptionToCustomConversion<DescriptionOf<PL>> extends CustomConversion<Uint8Array, any>
-  ? CustomConversionToType<DescriptionToCustomConversion<DescriptionOf<PL>>>
+  DescriptionToPayloadItem<DescriptionOf<PL>> extends LayoutItem
+  ? LayoutItemToType<DescriptionToPayloadItem<DescriptionOf<PL>>>
   : never;
 
 const guardianSignatureLayout = [
@@ -67,7 +63,7 @@ const guardianSignatureLayout = [
 const headerLayout = [
   { name: "version", binary: "uint", size: 1, custom: 1, omit: true },
   { name: "guardianSet", ...guardianSetItem },
-  { name: "signatures", binary: "array", lengthSize: 1, elements: guardianSignatureLayout },
+  { name: "signatures", binary: "array", lengthSize: 1, layout: guardianSignatureLayout },
 ] as const satisfies Layout;
 
 const envelopeLayout = [
@@ -109,46 +105,40 @@ function getPayloadDescription<PL extends PayloadLiteral>(payloadLiteral: PL) {
   return description as DescriptionOf<PL>;
 }
 
-//We are keeping getPayloadDescription() separate from descriptionToCustomConversion() and
-//  descriptionToPayloadLayoutItem() because we'll want to have access to the layout (if we it was
-//  registered as such) in the future when implementing a deserialization function that takes a set
-//  of payload literals and determines which layouts (if any) the serialized VAA encodes by
-//  leveraging:
-//    1. the size of the encoded VAA (if it is constant given the layout)
-//    2. the fixed items of the layout
-//  as a fast way to determine if that layout could possibly match at all.
-
 const isCustomConversion = (val: any): val is CustomConversion<Uint8Array, any> =>
   val.to !== undefined;
 
-const descriptionToCustomConversion = <PL extends PayloadLiteral>(
+const descriptionToPayloadItem = <PL extends PayloadLiteral>(
   description: DescriptionOf<PL>
-) => isCustomConversion(description)
-  ? description as CustomConversion<Uint8Array, any>
-  : layoutConversion(description as Layout) as DescriptionToCustomConversion<typeof description>;
-
-const descriptionToPayloadLayoutItem = <PL extends PayloadLiteral> (
-  description: DescriptionOf<PL>
-) => ({
-  name: "payload",
-  binary: "bytes",
-  custom: descriptionToCustomConversion(description),
-}) as const satisfies LayoutItem;
+): DescriptionToPayloadItem<typeof description> => ( isCustomConversion(description)
+  ? { name: "payload", binary: "bytes", custom: description } as const
+  : { name: "payload", binary: "object", layout: description as Layout } as const
+) as DescriptionToPayloadItem<DescriptionOf<PL>> satisfies LayoutItem;
 
 const bodyLayout = <PL extends PayloadLiteral>(payloadLiteral: PL) => [
   ...envelopeLayout,
-  descriptionToPayloadLayoutItem(getPayloadDescription(payloadLiteral))
+  descriptionToPayloadItem(getPayloadDescription(payloadLiteral))
 ] as const satisfies Layout;
 
 export const create = <PL extends PayloadLiteral = "Uint8Array">(
-  vaaData: Omit<VAA<PL>, keyof FixedItems<typeof baseLayout> | "hash">
+  payloadLiteral: PL,
+  vaaData: LayoutToType<DynamicItemsOfLayout<[
+      ...typeof baseLayout,
+      DescriptionToPayloadItem<DescriptionOf<PL>>
+    ]>>
 ): VAA<PL> => {
-  const layout = bodyLayout(vaaData.payloadLiteral);
+  const body = bodyLayout(payloadLiteral) as Layout;
+  const bodyWithFixed = addFixedValues(
+    body,
+    //not sure why the unknown cast here is required and why the type isn't inferred correctly
+    vaaData as LayoutToType<DynamicItemsOfLayout<typeof body>>
+  );
   return {
-    ...fixedItems(baseLayout),
-    ...vaaData,
-    hash: keccak_256(serializeLayout(layout, vaaData as LayoutToType<typeof layout>)),
-  };
+    payloadLiteral,
+    ...addFixedValues(headerLayout, vaaData as LayoutToType<typeof headerLayout>),
+    ...bodyWithFixed,
+    hash: keccak_256(serializeLayout(body, bodyWithFixed)),
+  } as VAA<PL>;
 };
 
 export function registerPayloadType<PL extends PayloadLiteral>(
@@ -166,7 +156,7 @@ export const serialize = <PL extends PayloadLiteral>(
 ): Uint8Array => {
   const layout = [
     ...baseLayout,
-    descriptionToPayloadLayoutItem(getPayloadDescription(vaa.payloadLiteral)),
+    descriptionToPayloadItem(getPayloadDescription(vaa.payloadLiteral)),
   ];
   return serializeLayout(layout, vaa as LayoutToType<typeof layout>);
 }
@@ -195,13 +185,24 @@ export function deserialize<PL extends PayloadLiteral>(
 export const serializePayload = <PL extends PayloadLiteral>(
   payloadLiteral: PL,
   payload: PayloadLiteralToPayloadType<PL>,
-) => descriptionToCustomConversion(getPayloadDescription(payloadLiteral)).from(payload);
+) => {
+  const description = getPayloadDescription(payloadLiteral);
+  return ( isCustomConversion(description)
+    ? description.from(payload)
+    : serializeLayout(description as Layout, payload)
+  );
+}
 
 export const deserializePayload = <PL extends PayloadLiteral>(
   payloadLiteral: PL,
   data: Uint8Array | string,
-) => descriptionToCustomConversion(getPayloadDescription(payloadLiteral))
-  .to((typeof data === "string") ? hexByteStringToUint8Array(data) : data) as
-  PayloadLiteralToPayloadType<PL>;
+): PayloadLiteralToPayloadType<PL> => {
+  const description = getPayloadDescription(payloadLiteral);
+  data = (typeof data === "string") ? hexByteStringToUint8Array(data) : data;
+  return ( isCustomConversion(description)
+    ? description.to(data)
+    : deserializeLayout(description as Layout, data)
+  );
+}
 
 payloadFactory.set("Uint8Array", uint8ArrayConversion);

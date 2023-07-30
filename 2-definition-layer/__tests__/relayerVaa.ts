@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals"
+import { describe, expect, it } from "@jest/globals";
 
 import { hexByteStringToUint8Array } from "wormhole-base";
 import { serializePayload, deserializePayload } from "../src/vaa";

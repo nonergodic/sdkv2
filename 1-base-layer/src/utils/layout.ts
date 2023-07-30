@@ -55,8 +55,6 @@ interface LayoutItemBase<BL extends BinaryLiterals> {
   readonly binary: BL,
 };
 
-type TypeCond<T, U> = [T] extends [never] ? {a: U} : {b: U};
-
 interface PrimitiveFixedCustom<T extends PrimitiveType> {
   custom: T,
   omit?: boolean
@@ -99,7 +97,7 @@ export interface LengthPrefixedBytesLayoutItem extends LayoutItemBase<"bytes"> {
 
 export interface ArrayLayoutItem extends LayoutItemBase<"array"> {
   readonly lengthSize?: NumberSize,
-  readonly elements: Layout,
+  readonly layout: Layout,
 };
 
 export interface ObjectLayoutItem extends LayoutItemBase<"object"> {
@@ -119,6 +117,8 @@ export type BytesLayoutItem = |
 export type LayoutItem = UintLayoutItem | BytesLayoutItem | ArrayLayoutItem | ObjectLayoutItem;
 export type Layout = readonly LayoutItem[];
 
+// ---- LayoutToType ----
+
 //TODO this is an extremly ugly hack to get around the “Type instantiation is excessively deep and
 //     possibly infinite” issue that popped up when ObjectLayoutItems were added
 //I'm not convinced this is really necessary and that there isn't some way to amend the code which
@@ -132,76 +132,159 @@ type NameOrOmitted<T extends { name: PropertyKey }> = T extends {omit: true} ? n
 //  if FixedConversion was tested for first, its ToType would erroneously be inferred to be a
 //    the `to` function that actually belongs to a CustomConversion
 //  unclear why this happens, seeing how the `from` type wouldn't fit but it happened nonetheless
-export type LayoutToType<T extends Layout, D extends Depth[number] = MaxDepth> =
-  [D] extends [never] ?
-  never :
-  T extends Layout
-  //raw tuple (separate, so we can handle the outermost array)
-  ? { readonly [Item in T[number] as NameOrOmitted<Item>]: LayoutItemToType<Item, D> }
-  : T extends LayoutItem
-  ? LayoutItemToType<T, D>
-  : never;
+export type LayoutToType<L extends Layout, D extends Depth[number] = MaxDepth> =
+  [D] extends [never]
+  ? never
+  : { readonly [I in L[number] as NameOrOmitted<I>]: LayoutItemToType<I, D> };
 
-export type LayoutItemToType<T extends LayoutItem, D extends Depth[number] = MaxDepth> =
-  T extends ArrayLayoutItem
-  ? LayoutToType<T["elements"], Depth[D]>[]
-  : T extends ObjectLayoutItem
-  ? LayoutToType<T["layout"], Depth[D]>
-  : T extends UintLayoutItem
-  ? ( T["custom"] extends number | bigint
-    ? T["custom"]
-    : T["custom"] extends CustomConversion<any, infer ToType>
+export type LayoutItemToType<I extends LayoutItem, D extends Depth[number] = MaxDepth> =
+  I extends ArrayLayoutItem
+  ? LayoutToType<I["layout"], Depth[D]>[]
+  : I extends ObjectLayoutItem
+  ? LayoutToType<I["layout"], Depth[D]>
+  : I extends UintLayoutItem
+  ? ( I["custom"] extends number | bigint
+    ? I["custom"]
+    : I["custom"] extends CustomConversion<any, infer ToType>
     ? ToType
-    : T["custom"] extends FixedConversion<any, infer ToType>
+    : I["custom"] extends FixedConversion<any, infer ToType>
     ? ToType
-    : UintSizeToPrimitive<T["size"]>
+    : UintSizeToPrimitive<I["size"]>
   )
-  : T extends BytesLayoutItem
-  ? ( T["custom"] extends CustomConversion<any, infer ToType>
+  : I extends BytesLayoutItem
+  ? ( I["custom"] extends CustomConversion<any, infer ToType>
     ? ToType
-    : T["custom"] extends FixedConversion<any, infer ToType>
+    : I["custom"] extends FixedConversion<any, infer ToType>
     ? ToType
     : Uint8Array
   )
   : never;
 
-//couldn't find a way (and I suspect there isn't one) to determine whether a given type is a literal
-//  and hence also no way to filter an object type for keys that have a literal type, so we have to
-//  effectively duplicate our effort here
-export type FixedItems<L extends Layout> =
-  L extends readonly (infer Item extends LayoutItem)[]
-  ? ( Item extends { custom: PrimitiveType | FixedConversion<PrimitiveType, any> }
-    ? { readonly [Name in Item["name"]]:
-        Item["custom"] extends PrimitiveType
-        ? Item["custom"]
-        : Item["custom"] extends FixedConversion<any, infer ToType>
-        ? ToType
-        : never
-    }
-    : never
-    )
-  : {};
+// ---- FixedItemsOfLayout ----
 
-export const fixedItems = <L extends Layout>(layout: L): FixedItems<L> =>
-  layout.reduce((acc: any, item: any) =>
-    item["custom"] !== undefined
-    ? ( isPrimitiveType(item["custom"])
-      ? {...acc, [item.name]: item.custom }
-      : isPrimitiveType(item["custom"].from)
-      ? {...acc, [item.name]: item.custom.to }
-      : acc
+type FilterFixedItem<I extends LayoutItem> =
+  I extends { custom: PrimitiveType | FixedConversion<PrimitiveType, any> }
+  ? I
+  : I extends ObjectLayoutItem | ArrayLayoutItem
+  ? ( FixedItemsOfLayout<I["layout"]> extends readonly LayoutItem[]
+    ? ( [FixedItemsOfLayout<I["layout"]>[number]] extends [never]
+      ? never
+      : { readonly [K in keyof I]: K extends "layout" ? FixedItemsOfLayout<I["layout"]> : I[K] }
+      )
+    : never
+  )
+  : never;
+
+export type FixedItemsOfLayout<L extends Layout> =
+  L extends readonly [infer H extends LayoutItem, ...infer T]
+  ? ( [FilterFixedItem<H>] extends [never]
+    ? ( T extends Layout
+      ? FixedItemsOfLayout<T>
+      : readonly []
     )
-    : acc,
-    {} as any
+    : ( T extends Layout
+      ? readonly [FilterFixedItem<H>, ...FixedItemsOfLayout<T>]
+      : readonly [FilterFixedItem<H>]
+    )
+  )
+  : readonly [];
+
+export const fixedItemsOfLayout = <L extends Layout>(layout: L): FixedItemsOfLayout<L> =>
+  layout.reduce(
+    (acc: any, item: any) => {
+      if (item["custom"] !== undefined && (
+          isPrimitiveType(item["custom"]) || isPrimitiveType(item["custom"].from)
+        ))
+        return [...acc, item ];
+      if (item.binary === "array" || item.binary === "object") {
+        const fixedItems = fixedItemsOfLayout(item.layout);
+        if (fixedItems.length > 0)
+          return [...acc, { ...item, layout: fixedItems }];
+      }
+      return acc;
+    },
+    [] as any
   );
 
-export type DynamicItems<L extends Layout> = Omit<LayoutToType<L>, keyof FixedItems<L>>;
+// ---- DynamicItemsOfLayout ----
 
-export const addFixed = <L extends Layout>(
+type FilterDynamicItem<I extends LayoutItem> =
+  I extends { custom: PrimitiveType | FixedConversion<PrimitiveType, any> }
+  ? never
+  : I extends ObjectLayoutItem | ArrayLayoutItem
+  ? ( DynamicItemsOfLayout<I["layout"]> extends readonly LayoutItem[]
+    ? ( [DynamicItemsOfLayout<I["layout"]>[number]] extends [never]
+      ? never
+      : { readonly [K in keyof I]: K extends "layout" ? DynamicItemsOfLayout<I["layout"]> : I[K] }
+    )
+    : never
+  )
+  : I;
+
+export type DynamicItemsOfLayout<L extends Layout> =
+  L extends readonly [infer H extends LayoutItem, ...infer T]
+  ? ( [FilterDynamicItem<H>] extends [never]
+    ? ( T extends Layout
+      ? DynamicItemsOfLayout<T>
+      : readonly []
+    )
+    : ( T extends Layout
+      ? readonly [FilterDynamicItem<H>, ...DynamicItemsOfLayout<T>]
+      : readonly [FilterDynamicItem<H>]
+    )
+  )
+  : readonly [];
+
+export const dynamicItemsOfLayout = <L extends Layout>(layout: L): DynamicItemsOfLayout<L> =>
+  layout.reduce(
+    (acc: any, item: any) => {
+      if (item["custom"] === undefined || !(
+          isPrimitiveType(item["custom"]) || isPrimitiveType(item["custom"].from)
+        ))
+        return [...acc, item ];
+      if (item.binary === "array" || item.binary === "object") {
+        const dynamicItems = dynamicItemsOfLayout(item.layout);
+        if (dynamicItems.length > 0)
+          return [...acc, { ...item, layout: dynamicItems }];
+      }
+      return acc;
+    },
+    [] as any
+  );
+
+export const addFixedValues = <L extends Layout>(
   layout: L,
-  dynamicValues: DynamicItems<L>,
-): LayoutToType<L> =>
-  ({...fixedItems(layout), ...dynamicValues}) as LayoutToType<L>;
+  dynamicValues: LayoutToType<DynamicItemsOfLayout<L>>,
+): LayoutToType<L> => {
+  const ret = {} as any;
+  for (const item of layout) {
+    if (item.binary === "object") {
+      const subDynamicValues = (
+        (item.name in dynamicValues)
+        ? dynamicValues[item.name as keyof typeof dynamicValues]
+        : {}
+      ) as LayoutToType<DynamicItemsOfLayout<typeof item.layout>>;
+      ret[item.name] = addFixedValues(item.layout, subDynamicValues);
+    }
+    else if (item.binary === "array") {
+      const subDynamicValues = (
+        (item.name in dynamicValues)
+        ? dynamicValues[item.name as keyof typeof dynamicValues]
+        : []
+      ) as readonly LayoutToType<DynamicItemsOfLayout<typeof item.layout>>[];
+      ret[item.name] = subDynamicValues.map(element => addFixedValues(item.layout, element));
+    }
+    else if (item.custom !== undefined &&
+        (isPrimitiveType(item.custom) || isPrimitiveType((item.custom as {from: any}).from))
+      ) {
+        if (!(item as {omit?: boolean})?.omit)
+          ret[item.name] = isPrimitiveType(item.custom) ? item.custom : item.custom.to;
+    }
+    else
+      ret[item.name] = dynamicValues[item.name as keyof typeof dynamicValues];
+  }
+  return ret as LayoutToType<L>;
+}
 
 export function serializeLayout<L extends Layout>(
   layout: L,
@@ -223,7 +306,7 @@ export function serializeLayout<L extends Layout>(
 ): Uint8Array | number {
   let ret = encoded ?? new Uint8Array(calcLayoutSize(layout, data));
   for (let i = 0; i < layout.length; ++i)
-    offset = serializeLayoutItem(layout[i], data[layout[i].name], ret, offset);
+    offset = serializeLayoutItem(layout[i], data[layout[i].name as keyof typeof data], ret, offset);
 
   return encoded === undefined ? ret : offset;
 }
@@ -278,7 +361,7 @@ export const calcLayoutSize = (
 
         const narrowedData = data[item.name] as LayoutItemToType<typeof item>;
         for (let i = 0; i < narrowedData.length; ++i)
-          acc += calcLayoutSize(item.elements, narrowedData[i]);
+          acc += calcLayoutSize(item.layout, narrowedData[i]);
 
         return acc;
       }
@@ -311,8 +394,6 @@ export const calcLayoutSize = (
   },
   0
   );
-
-// -- IMPL --
 
 //Wormhole uses big endian by default for all uints
 function serializeUint(
@@ -383,7 +464,7 @@ function serializeLayoutItem(
           offset = serializeUint(encoded, offset, data.length, item.lengthSize);
 
         for (let i = 0; i < data.length; ++i)
-          offset = serializeLayout(item.elements, data[i], encoded, offset);
+          offset = serializeLayout(item.layout, data[i], encoded, offset);
 
         break;
       }
@@ -392,7 +473,8 @@ function serializeLayoutItem(
         const value = (() => {
           if (item.custom !== undefined) {
             if (item.custom instanceof Uint8Array) {
-              checkUint8ArrayDeeplyEqual(item.custom, data)
+              if (!(item as { omit?: boolean })?.omit)
+                checkUint8ArrayDeeplyEqual(item.custom, data);
               return item.custom;
             }
             if (item.custom.from instanceof Uint8Array)
@@ -420,7 +502,8 @@ function serializeLayoutItem(
         const value = (() => {
           if (item.custom !== undefined) {
             if (typeof item.custom == "number" || typeof item.custom === "bigint") {
-              checkUintEquals(item.custom, data);
+              if (!(item as { omit?: boolean })?.omit)
+                checkUintEquals(item.custom, data);
               return item.custom;
             }
             if (typeof item.custom.from == "number" || typeof item.custom.from === "bigint")
@@ -484,16 +567,16 @@ function deserializeLayoutItem (
         return deserializeLayout(item.layout, encoded, offset, false);
       }
       case "array": {
-        let ret = [] as LayoutToType<typeof item.elements>[];
+        let ret = [] as LayoutToType<typeof item.layout>[];
         if (item.lengthSize !== undefined) {
           const [length, newOffset] = deserializeUint(encoded, offset, item.lengthSize);
           offset = newOffset;
           for (let i = 0; i < length; ++i)
-            [ret[i], offset] = deserializeLayout(item.elements, encoded, offset, false);
+            [ret[i], offset] = deserializeLayout(item.layout, encoded, offset, false);
         }
         else {
           while (offset < encoded.length)
-            [ret[ret.length], offset] = deserializeLayout(item.elements, encoded, offset, false);
+            [ret[ret.length], offset] = deserializeLayout(item.layout, encoded, offset, false);
         }
         return [ret, offset];
       }

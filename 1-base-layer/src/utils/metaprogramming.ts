@@ -25,4 +25,6 @@ TupArr extends readonly [infer A extends readonly any[], ...infer Tail extends r
 export type IndexIsType<Arr extends readonly any[], Index, Type> =
   And<IndexIsTypeArray<Arr, Index, Type>>;
 
+//the Exclude<T, undefined> here seems silly but for some reason TypeScript incorrectly inferred
+//  undefined as a possible value for T when used in conjunction with a generic type parameter
 export type DefinedOrDefault<T, D> = undefined extends T ? D : Exclude<T, undefined>;

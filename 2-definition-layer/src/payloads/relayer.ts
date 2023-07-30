@@ -53,7 +53,7 @@ const relayerPayloads = [
     { name: "refundDeliveryProvider", ...universalAddressItem },
     { name: "sourceDeliveryProvider", ...universalAddressItem },
     { name: "senderAddress", ...universalAddressItem },
-    { name: "vaaKeys", binary: "array", lengthSize: 1, elements: vaaKeyLayout }
+    { name: "vaaKeys", binary: "array", lengthSize: 1, layout: vaaKeyLayout },
   ]],
   [ "RedeliveryInstruction", [
     payloadIdItem(2),

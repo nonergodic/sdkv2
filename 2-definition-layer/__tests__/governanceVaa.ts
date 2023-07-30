@@ -73,28 +73,25 @@ const guardianSetUpgrade = "0x" +
 
 describe("Governance VAA tests", function () {
   it("should create an empty VAA from an object with omitted fixed values", function () {
-    const vaa = create({
-      payloadLiteral: "CoreBridgeUpgradeContract",
-      guardianSet: 0,
-      signatures: [],
-      nonce: 0,
-      timestamp: 0,
-      sequence: 0n,
-      emitterChain: "Solana",
-      emitterAddress: new UniversalAddress(new Uint8Array(32)),
-      consistencyLevel: 0,
-      payload: {
-          //module and action should not be required values but should be recursively
-          //  deduced as fixed values (once fixed custom values have been implemented)
-          //see TODOs in layout.ts
-          module: "CoreBridge",
-          action: "UpgradeContract",
-          chain: "Ethereum",
-          newContract: new UniversalAddress(new Uint8Array(32))
+    const vaa = create(
+      "CoreBridgeUpgradeContract",
+      {
+        guardianSet: 0,
+        signatures: [],
+        nonce: 0,
+        timestamp: 0,
+        sequence: 0n,
+        emitterChain: "Solana",
+        emitterAddress: new UniversalAddress(new Uint8Array(32)),
+        consistencyLevel: 0,
+        payload: {
+            chain: "Ethereum",
+            newContract: new UniversalAddress(new Uint8Array(32))
+        }
       }
-    });
-    //TODO
-    expect(1).toBe(1);
+    );
+    expect(vaa.payload.module).toEqual("CoreBridge");
+    expect(vaa.payload.action).toEqual("UpgradeContract");
   });
 
   it("should correctly deserialize and reserialize a guardian set upgrade VAA", function () {
@@ -107,7 +104,7 @@ describe("Governance VAA tests", function () {
     expect(vaa.payload.module).toBe("CoreBridge");
     expect(vaa.payload.action).toBe("GuardianSetUpgrade");
     expect(vaa.payload.guardianSet).toBe(3);
-    expect(vaa.payload.guardians).toBe(19);
+    expect(vaa.payload.guardians.length).toBe(19);
 
     const encoded = serialize(vaa);
     expect(encoded).toEqual(hexByteStringToUint8Array(guardianSetUpgrade));

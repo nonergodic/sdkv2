@@ -48,7 +48,7 @@ const actionTuples = [
     allowNull: true,
     layout: [
       { name: "guardianSet", ...guardianSetItem },
-      { name: "guardians", binary: "array", lengthSize: 1, elements: [
+      { name: "guardians", binary: "array", lengthSize: 1, layout: [
         { name: "address", binary: "bytes", size: 20 }, //TODO better (custom) type?
       ]},
     ] as const satisfies Layout,

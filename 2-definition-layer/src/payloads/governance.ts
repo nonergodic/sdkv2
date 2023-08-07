@@ -1,5 +1,5 @@
 import {
-  platformToChainsMapping,
+  platformToChains,
   modules,
   Module,
   FixedConversion,
@@ -15,19 +15,24 @@ import {
 import { chainItem, universalAddressItem, guardianSetItem } from "../layout-items";
 import { registerPayloadType } from "../vaa";
 
+//One thing that's not captures by the payload itself is the fact that governance VAAs should
+//  always have Solana as the emitter chain and address bytes32(4) as the emitter address.
+//These values are actually magic values though, because governance VAAs are actually created and
+//  signed off-chain and are not the result of on-chain observations.
+//Additionally their sequence numbers are also chosen at random (and hence tend to be very large).
 const actionTuples = [
   ["UpgradeContract", {
     allowNull: false,
     layout: [
       { name: "newContract", ...universalAddressItem },
-    ] as const satisfies Layout,
+    ],
   }],
   ["RegisterChain", {
     allowNull: true,
     layout: [
       { name: "foreignChain", ...chainItem() },
       { name: "foreignAddress", ...universalAddressItem },
-    ] as const satisfies Layout,
+    ],
   }],
   //a word on the chainId for RecoverChainId:
   //The implementation of the contracts accept an arbitrary number when recovering chain ids however
@@ -41,8 +46,8 @@ const actionTuples = [
     allowNull: false,
     layout: [
       { name: "evmChainId", binary: "uint", size: 32 },
-      { name: "newChainId", ...chainItem({allowedChains: platformToChainsMapping["Evm"]}) },
-    ] as const satisfies Layout,
+      { name: "newChainId", ...chainItem({allowedChains: platformToChains("Evm")}) },
+    ],
   }],
   ["GuardianSetUpgrade", {
     allowNull: true,
@@ -51,28 +56,28 @@ const actionTuples = [
       { name: "guardians", binary: "array", lengthSize: 1, layout: [
         { name: "address", binary: "bytes", size: 20 }, //TODO better (custom) type?
       ]},
-    ] as const satisfies Layout,
+    ],
   }],
   ["SetMessageFee", {
     allowNull: false,
     layout: [
       { name: "messageFee", binary: "uint",  size: 32 },
-    ] as const satisfies Layout,
+    ],
   }],
   ["TransferFees", {
     allowNull: true,
     layout: [
       { name: "amount", binary: "uint",  size: 32 },
       { name: "recipient", ...universalAddressItem },
-    ] as const satisfies Layout,
+    ],
   }],
   ["UpdateDefaultProvider", {
     allowNull: false,
     layout: [
       { name: "defaultProvider", ...universalAddressItem },
-    ] as const satisfies Layout,
+    ],
   }],
-] as const;
+] as const satisfies readonly (readonly [string, {allowNull: boolean, layout: Layout}])[];
 
 const actions = column(actionTuples, 0);
 type Action = typeof actions[number];
@@ -116,17 +121,15 @@ const moduleToActionToNumTuples = [
     ["UpgradeContract", 2],
     ["UpdateDefaultProvider", 3],
   ]],
-] as const;
+] as const satisfies readonly (readonly [Module, readonly (readonly [Action, number])[]])[];
 
-const [actionToNumMapping, numToActionMapping, moduleActions] = (() => {
+const [actionToNumMapping, moduleActions] = (() => {
   //that's what you get when your insane programming language doesn't support higher order functions
   //  on types...
   const moduleToActionTuple = toMapping(moduleToActionToNumTuples);
   return [
     toMapping(modules.map((module) => [module, toMapping(moduleToActionTuple[module])])) as
       { readonly [M in Module]: ToMapping<typeof moduleToActionTuple[M]> },
-    toMapping(modules.map((module) => [module, toMapping(moduleToActionTuple[module], 1, 0)])) as
-      { readonly [M in Module]: ToMapping<typeof moduleToActionTuple[M], 1, 0> },
     toMapping(modules.map((module) => [module, column(moduleToActionTuple[module], 0)])) as
       { readonly [M in Module]:
         typeof moduleToActionTuple[M] extends infer A extends readonly any[]
@@ -166,7 +169,6 @@ const headerLayout = <
 >(module: M, action: A & Action) => [
   { name: "module", binary: "bytes", size: moduleBytesSize, custom: moduleConversion(module) },
   { name: "action", binary: "uint",  size: 1, custom: actionConversion(module, action) },
-  //TODO is this always Solana? - if so import and use `custom: fixedChain("Solana")`
   { name: "chain", ...chainItem(actionMapping[action]) },
 ] as const;
 
@@ -174,7 +176,7 @@ type GovernancePayloadLayouts = Flatten<
   typeof modules extends infer M
   ? { readonly [I in keyof M]:
     typeof modules[I] extends keyof typeof moduleActions
-    ? ( typeof moduleActions[typeof modules[I]] extends infer A
+    ? typeof moduleActions[typeof modules[I]] extends infer A
       ? { [J in keyof A]: readonly [
         ConcatStringLiterals<[
           typeof modules[I],
@@ -191,7 +193,6 @@ type GovernancePayloadLayouts = Flatten<
         ]>,
       ] }
       : never
-    )
     : never
   }
   : never

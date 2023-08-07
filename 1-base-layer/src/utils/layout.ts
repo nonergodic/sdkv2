@@ -143,21 +143,19 @@ export type LayoutItemToType<I extends LayoutItem, D extends Depth[number] = Max
   : I extends ObjectLayoutItem
   ? LayoutToType<I["layout"], Depth[D]>
   : I extends UintLayoutItem
-  ? ( I["custom"] extends number | bigint
+  ? I["custom"] extends number | bigint
     ? I["custom"]
     : I["custom"] extends CustomConversion<any, infer ToType>
     ? ToType
     : I["custom"] extends FixedConversion<any, infer ToType>
     ? ToType
     : UintSizeToPrimitive<I["size"]>
-  )
   : I extends BytesLayoutItem
-  ? ( I["custom"] extends CustomConversion<any, infer ToType>
+  ? I["custom"] extends CustomConversion<any, infer ToType>
     ? ToType
     : I["custom"] extends FixedConversion<any, infer ToType>
     ? ToType
     : Uint8Array
-  )
   : never;
 
 // ---- FixedItemsOfLayout ----
@@ -166,27 +164,22 @@ type FilterFixedItem<I extends LayoutItem> =
   I extends { custom: PrimitiveType | FixedConversion<PrimitiveType, any> }
   ? I
   : I extends ObjectLayoutItem | ArrayLayoutItem
-  ? ( FixedItemsOfLayout<I["layout"]> extends readonly LayoutItem[]
-    ? ( [FixedItemsOfLayout<I["layout"]>[number]] extends [never]
+  ? FixedItemsOfLayout<I["layout"]> extends readonly LayoutItem[]
+    ? [FixedItemsOfLayout<I["layout"]>[number]] extends [never]
       ? never
       : { readonly [K in keyof I]: K extends "layout" ? FixedItemsOfLayout<I["layout"]> : I[K] }
-      )
     : never
-  )
   : never;
 
 export type FixedItemsOfLayout<L extends Layout> =
   L extends readonly [infer H extends LayoutItem, ...infer T]
-  ? ( [FilterFixedItem<H>] extends [never]
-    ? ( T extends Layout
+  ? [FilterFixedItem<H>] extends [never]
+    ? T extends Layout
       ? FixedItemsOfLayout<T>
       : readonly []
-    )
-    : ( T extends Layout
+    : T extends Layout
       ? readonly [FilterFixedItem<H>, ...FixedItemsOfLayout<T>]
       : readonly [FilterFixedItem<H>]
-    )
-  )
   : readonly [];
 
 export const fixedItemsOfLayout = <L extends Layout>(layout: L): FixedItemsOfLayout<L> =>
@@ -212,27 +205,22 @@ type FilterDynamicItem<I extends LayoutItem> =
   I extends { custom: PrimitiveType | FixedConversion<PrimitiveType, any> }
   ? never
   : I extends ObjectLayoutItem | ArrayLayoutItem
-  ? ( DynamicItemsOfLayout<I["layout"]> extends readonly LayoutItem[]
-    ? ( [DynamicItemsOfLayout<I["layout"]>[number]] extends [never]
+  ? DynamicItemsOfLayout<I["layout"]> extends readonly LayoutItem[]
+    ? [DynamicItemsOfLayout<I["layout"]>[number]] extends [never]
       ? never
       : { readonly [K in keyof I]: K extends "layout" ? DynamicItemsOfLayout<I["layout"]> : I[K] }
-    )
     : never
-  )
   : I;
 
 export type DynamicItemsOfLayout<L extends Layout> =
   L extends readonly [infer H extends LayoutItem, ...infer T]
-  ? ( [FilterDynamicItem<H>] extends [never]
-    ? ( T extends Layout
+  ? [FilterDynamicItem<H>] extends [never]
+    ? T extends Layout
       ? DynamicItemsOfLayout<T>
       : readonly []
-    )
-    : ( T extends Layout
+    : T extends Layout
       ? readonly [FilterDynamicItem<H>, ...DynamicItemsOfLayout<T>]
       : readonly [FilterDynamicItem<H>]
-    )
-  )
   : readonly [];
 
 export const dynamicItemsOfLayout = <L extends Layout>(layout: L): DynamicItemsOfLayout<L> =>

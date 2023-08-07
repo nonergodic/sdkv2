@@ -35,7 +35,7 @@ const transferCommonLayout = [
   ]},
 ] as const satisfies Layout;
 
-const tokenBridgePayloads = [
+export const tokenBridgePayloads = [
   [ "AttestMeta", [
     payloadIdItem(2),
     { name: "token", binary: "object", layout: [

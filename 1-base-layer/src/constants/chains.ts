@@ -1,4 +1,4 @@
-import { unzip, toMapping } from "../utils/mapping";
+import { unzip, toMapping, toMappingFunc } from "../utils/mapping";
 
 //Typescript being the absolute mess that it is has no way to turn the keys of an object that is
 //  declared `as const` into an `as const` array (see:
@@ -49,11 +49,24 @@ export const [chains, chainIds] = unzip(chainsAndChainIdEntries);
 export type Chain = typeof chains[number];
 export type ChainId = typeof chainIds[number];
 
-export const chainToChainIdMapping = toMapping(chainsAndChainIdEntries);
-export const chainIdToChainMapping = toMapping(chainsAndChainIdEntries, 1, 0);
+const chainToChainIdMapping = toMapping(chainsAndChainIdEntries);
+export const chainToChainId = toMappingFunc(chainToChainIdMapping);
+const chainIdToChainMapping = toMapping(chainsAndChainIdEntries, 1, 0);
+export const chainIdToChain = toMappingFunc(chainIdToChainMapping);
 
 export const isChain = (chain: string): chain is Chain =>
   chain in chainToChainIdMapping;
 
 export const isChainId = (chainId: number): chainId is ChainId =>
   chainId in chainIdToChainMapping;
+
+export function assertChainId(chainId: number): asserts chainId is ChainId {
+  if (!isChainId(chainId))
+    throw Error(`Unknown Wormhole chain id: ${chainId}`);
+}
+
+//safe assertion that allows chaining
+export const asChainId = (chainId: number): ChainId => {
+  assertChainId(chainId);
+  return chainId;
+}

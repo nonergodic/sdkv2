@@ -1,4 +1,10 @@
-import { Chain, isChain, Platform, toPlatform, ToPlatform } from "wormhole-base";
+import {
+  Chain,
+  isChain,
+  Platform,
+  chainToPlatform,
+  ChainToPlatformMapping
+} from "wormhole-base";
 
 //TODO BRRRR circular include!!
 //I have yet to figure out how to get the equivalent of a forward declaration to work (without
@@ -28,25 +34,23 @@ export interface Address {
   //static byteSize(): number;
 }
 
-//TODO should address be a UniveralAddress?
-//     Or should this be generic with C extends Chain, with
-//       address = NativeAddressType<C> | UniversalAddress ?
-export interface ChainAddressPair {
-  readonly chain: Chain;
-  readonly address: Address;
-}
-
 declare global { namespace Wormhole {
   export interface PlatformToNativeAddressMapping {}
 }}
 
 export type MappedPlatforms = keyof Wormhole.PlatformToNativeAddressMapping;
+
 type ChainOrPlatformToPlatform<T extends Chain | Platform> =
-  T extends Chain ? ToPlatform<T> : T;
-export type NativeAddressType<T extends Platform | Chain> =
+  T extends Chain ? ChainToPlatformMapping<T> : T;
+export type NativeAddress<T extends Platform | Chain> =
   ChainOrPlatformToPlatform<T> extends MappedPlatforms
   ? Wormhole.PlatformToNativeAddressMapping[ChainOrPlatformToPlatform<T>]
   : never;
+
+export type UniversalOrNative<P extends Platform> = UniversalAddress | NativeAddress<P>;
+
+export type ChainAddressPair<C extends Chain = Chain> =
+  readonly [C, UniversalAddress | NativeAddress<C>];
 
 type NativeAddressCtr = new (ua: UniversalAddress) => Address;
 
@@ -65,14 +69,12 @@ export function registerNative<P extends MappedPlatforms>(
 export function toNative<T extends Platform | Chain>(
   chainOrPlatform: T,
   ua: UniversalAddress,
-): NativeAddressType<T> {
+): NativeAddress<T> {
   const platform: Platform =
-    isChain(chainOrPlatform)
-    ? toPlatform(chainOrPlatform)
-    : chainOrPlatform;
+    isChain(chainOrPlatform) ? chainToPlatform(chainOrPlatform) : chainOrPlatform;
   const nativeCtr = nativeFactory.get(platform);
   if (!nativeCtr)
     throw new Error(`No native address type registered for platform ${platform}`);
 
-  return (new nativeCtr(ua)) as NativeAddressType<T>;
+  return (new nativeCtr(ua)) as unknown as NativeAddress<T>;
 }

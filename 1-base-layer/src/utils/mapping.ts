@@ -29,6 +29,9 @@ export const toMapping = <
     {} as any
   ) as ToMapping<A, K, V>;
 
+export const toMappingFunc = <M extends Record<any, any>>(mapping: M) =>
+  (key: keyof M) => mapping[key];
+
 export type Column<TupArr extends TupleArray, Index> =
   { [K in keyof TupArr]: Index extends keyof TupArr[K] ? TupArr[K][Index] : never };
 

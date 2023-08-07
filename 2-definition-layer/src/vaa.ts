@@ -1,6 +1,3 @@
-//@noble is what ethers uses under the hood
-import { keccak_256 } from "@noble/hashes/sha3";
-
 import {
   hexByteStringToUint8Array,
   Layout,
@@ -21,6 +18,8 @@ import {
   sequenceItem,
   guardianSetItem,
 } from "./layout-items";
+
+import { keccak256 } from "./utils";
 
 const uint8ArrayConversion = {
   to: (val: Uint8Array) => val,
@@ -137,7 +136,7 @@ export const create = <PL extends PayloadLiteral = "Uint8Array">(
     payloadLiteral,
     ...addFixedValues(headerLayout, vaaData as LayoutToType<typeof headerLayout>),
     ...bodyWithFixed,
-    hash: keccak_256(serializeLayout(body, bodyWithFixed)),
+    hash: keccak256(serializeLayout(body, bodyWithFixed)),
   } as VAA<PL>;
 };
 
@@ -177,7 +176,7 @@ export function deserialize<PL extends PayloadLiteral>(
       throw new Error("Guardian signatures must be in ascending order of guardian set index");
 
   const body = deserializeLayout(bodyLayout(payloadLiteral), data, bodyOffset);
-  const hash = keccak_256(data.slice(bodyOffset));
+  const hash = keccak256(data.slice(bodyOffset));
 
   return { payloadLiteral, ...header, ...body, hash } as VAA<PL>;
 }

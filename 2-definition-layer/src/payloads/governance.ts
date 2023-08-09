@@ -143,7 +143,7 @@ type ModuleAction<M extends Module> = typeof moduleActions[M][number];
 
 const moduleBytesSize = 32;
 
-const moduleConversion = <const M extends Module>(module: M) => ({
+const moduleConversion = <M extends Module>(module: M) => ({
   to: module,
   from: ((): Uint8Array => {
     const bytes = new Uint8Array(moduleBytesSize);
@@ -156,7 +156,7 @@ const moduleConversion = <const M extends Module>(module: M) => ({
 }) as const satisfies FixedConversion<Uint8Array, M>;
 
 const actionConversion = <
-  const M extends Module,
+  M extends Module,
   const A extends ModuleAction<M>
 >(module: M, action: A) => ({
   to: action,
@@ -164,7 +164,7 @@ const actionConversion = <
 }) as const satisfies FixedConversion<number, A>;
 
 const headerLayout = <
-  const M extends Module,
+  M extends Module,
   const A extends ModuleAction<M>
 >(module: M, action: A & Action) => [
   { name: "module", binary: "bytes", size: moduleBytesSize, custom: moduleConversion(module) },

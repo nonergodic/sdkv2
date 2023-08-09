@@ -107,7 +107,7 @@ export class EvmTokenBridge implements TokenBridge<"Evm"> {
     //  EVM core bridge:
     //Guardians don't sign messages (bodies) but explicitly hash them via keccak256 first.
     //However, they use an ECDSA scheme for signing where the first step is to hash the "message"
-    //  (which at this point is already the digest of the original message/body!.
+    //  (which at this point is already the digest of the original message/body!)
     //Now, on EVM, ecrecover expects the final digest (i.e. a bytes32 rather than a dynamic bytes)
     //  i.e. it does no hashing itself. Therefore the EVM core bridge has to hash the body twice
     //  before calling ecrecover. But in the process of doing so, it erroneously sets the doubly

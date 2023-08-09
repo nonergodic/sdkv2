@@ -18,8 +18,8 @@ export type ToMapping<
 
 export const toMapping = <
   const A extends TupleArray,
-  const K extends number | undefined,
-  const V extends number | undefined,
+  K extends number | undefined,
+  V extends number | undefined,
 >(arr: A, keyIndex?: K, valIndex?: V) =>
   arr.reduce(
     (acc, entry) => {
@@ -37,7 +37,7 @@ export type Column<TupArr extends TupleArray, Index> =
 
 export const column = <
   const TupArr extends TupleArray,
-  const Index extends number,
+  Index extends number,
 >(tupArr: TupArr, index: Index) =>
   tupArr.map((tuple) => tuple[index]) as Column<TupArr, Index>;
 
